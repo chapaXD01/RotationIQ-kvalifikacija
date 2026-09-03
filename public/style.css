@@ -1,0 +1,64 @@
+/* laukuma css */
+
+#court {
+    width: 500px;
+    height: 400px;
+    background: #e0b26b;
+    position: relative;
+    border: 5px solid white;
+    margin: 0;
+    padding: 0;
+}
+
+.player {
+    width: 45px;
+    height: 45px;
+    background: #e63946;
+    color: white;
+    border-radius: 50%;
+    position: absolute;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    user-select: none;
+    transition: top 0.3s ease, left 0.3s ease;
+}
+
+.zones {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    pointer-events: none;
+}
+
+.zone {
+    border: 2px dashed rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: rgba(255,255,255,0.6);
+}
+
+.rotation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rotation-card {
+    background: #eee;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 18px;
+}
+
+.rotation-card a {
+    text-decoration: none;
+    color: black;
+}

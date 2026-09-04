@@ -20,6 +20,14 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
+test('authenticated users can see their role in the navigation', function () {
+    $user = User::factory()->create(['role' => 'coach']);
+
+    $response = $this->actingAs($user)->get('/dashboard');
+
+    $response->assertSee('Coach');
+});
+
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 

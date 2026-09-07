@@ -31,6 +31,10 @@
                             class="!text-white hover:!text-white !rounded-lg !px-3 !py-1.5 !text-sm transition">
                             {{ __('Movements') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('teams.index')" :active="request()->routeIs('teams.*')"
+                            class="!text-white hover:!text-white !rounded-lg !px-3 !py-1.5 !text-sm transition">
+                            {{ __('Teams') }}
+                        </x-nav-link>
                     @endauth
                 </div>
             </div>
@@ -103,6 +107,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('movingplayers.index')" :active="request()->routeIs('movingplayers.*')">
                     {{ __('Movements') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('teams.index')" :active="request()->routeIs('teams.*')">
+                    {{ __('Teams') }}
                 </x-responsive-nav-link>
             @endauth
         </div>

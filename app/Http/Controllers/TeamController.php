@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Team;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+
+class TeamController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $teams = $request->user()->teams()->with(['coach', 'members'])->latest()->get();
+
+        return view('teams.index', compact('teams'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->role === 'coach', 403);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]);
+
+        do {
+            $joinCode = Str::upper(Str::random(8));
+        } while (Team::where('join_code', $joinCode)->exists());
+
+        $team = Team::create([
+            'coach_id' => $request->user()->id,
+            'name' => $validated['name'],
+            'join_code' => $joinCode,
+        ]);
+
+        $team->members()->attach($request->user()->id);
+
+        return to_route('teams.index')->with('success', 'Team created. Share the join code with your students.');
+    }
+
+    public function join(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'join_code' => ['required', 'string', 'size:8'],
+        ]);
+
+        $team = Team::where('join_code', Str::upper($validated['join_code']))->first();
+
+        if (! $team) {
+            return to_route('teams.index')->withErrors(['join_code' => 'That join code is not valid.']);
+        }
+
+        if ($team->members()->whereKey($request->user()->id)->exists()) {
+            return to_route('teams.index')->with('success', 'You are already a member of this team.');
+        }
+
+        $team->members()->attach($request->user()->id);
+
+        return to_route('teams.index')->with('success', "You joined {$team->name}.");
+    }
+}

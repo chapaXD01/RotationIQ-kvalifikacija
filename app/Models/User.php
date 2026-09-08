@@ -52,4 +52,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Team::class)->withTimestamps();
     }
+
+    public function teamMessages()
+    {
+        return $this->hasMany(TeamMessage::class);
+    }
 }

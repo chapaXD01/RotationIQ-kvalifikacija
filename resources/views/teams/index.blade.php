@@ -62,18 +62,54 @@
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <h3 class="font-bold text-white text-lg">{{ $team->name }}</h3>
-                                        <p class="mt-1 text-sm text-white/55">Coach: {{ $team->coach->name }}</p>
+                                        <p class="mt-1 text-sm text-slate-300">Coach: {{ $team->coach->name }}</p>
                                     </div>
-                                    <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-semibold text-white/70">{{ $team->members->count() }} members</span>
+                                    <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-semibold text-slate-300">{{ $team->members->count() }} members</span>
                                 </div>
                                 <div class="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
-                                    <span class="text-xs uppercase tracking-widest text-white/45">Join code</span>
-                                    <code class="text-lg font-bold tracking-[0.2em] text-blue-300">{{ $team->join_code }}</code>
+                                    <span class="text-xs uppercase tracking-wide text-slate-400">Join code</span>
+                                    <code class="text-lg font-bold tracking-[0.2em] text-slate-300">{{ $team->join_code }}</code>
                                 </div>
                                 <div class="mt-4 flex flex-wrap gap-2">
                                     @foreach ($team->members as $member)
-                                        <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-white/75">{{ $member->name }}</span>
+                                        <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-slate-300">{{ $member->name }}</span>
                                     @endforeach
+                                </div>
+
+                                <div class="mt-5 pt-4 border-t border-white/10">
+                                    <div class="mb-3 flex items-center justify-between">
+                                        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Team chat</span>
+                                        <span class="text-[10px] text-slate-400">{{ $team->messages->count() }} messages</span>
+                                    </div>
+
+                                    <div class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                                        @forelse ($team->messages->take(6) as $message)
+                                            <div class="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
+                                                <div class="mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-slate-400">
+                                                    <span>{{ $message->user->name }}</span>
+                                                    <span>{{ $message->created_at->diffForHumans() }}</span>
+                                                </div>
+                                                <p class="text-sm text-slate-200">{{ $message->message }}</p>
+                                            </div>
+                                        @empty
+                                            <p class="text-sm text-slate-400">No messages yet. Start the conversation.</p>
+                                        @endforelse
+                                    </div>
+
+                                    <form method="POST" action="{{ route('teams.messages.store', $team) }}" class="mt-4 flex gap-2">
+                                        @csrf
+                                        <input
+                                            type="text"
+                                            name="message"
+                                            maxlength="2000"
+                                            required
+                                            placeholder="Message the team..."
+                                            class="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-slate-400 focus:border-blue-400 focus:ring-blue-400"
+                                        >
+                                        <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition">
+                                            Send
+                                        </button>
+                                    </form>
                                 </div>
                             </article>
                         @endforeach

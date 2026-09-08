@@ -22,4 +22,9 @@ class Team extends Model
     {
         return $this->belongsToMany(User::class)->withTimestamps();
     }
+
+    public function messages()
+    {
+        return $this->hasMany(TeamMessage::class)->latest();
+    }
 }

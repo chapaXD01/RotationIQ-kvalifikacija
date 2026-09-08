@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Team;
+use App\Models\TeamMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ class TeamController extends Controller
 {
     public function index(Request $request): View
     {
-        $teams = $request->user()->teams()->with(['coach', 'members'])->latest()->get();
+        $teams = $request->user()->teams()->with(['coach', 'members', 'messages.user'])->latest()->get();
 
         return view('teams.index', compact('teams'));
     }
@@ -59,5 +60,22 @@ class TeamController extends Controller
         $team->members()->attach($request->user()->id);
 
         return to_route('teams.index')->with('success', "You joined {$team->name}.");
+    }
+
+    public function storeMessage(Request $request, Team $team): RedirectResponse
+    {
+        abort_unless($team->members()->whereKey($request->user()->id)->exists(), 403);
+
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:2000'],
+        ]);
+
+        TeamMessage::create([
+            'team_id' => $team->id,
+            'user_id' => $request->user()->id,
+            'message' => trim($validated['message']),
+        ]);
+
+        return back()->with('success', 'Message sent.');
     }
 }

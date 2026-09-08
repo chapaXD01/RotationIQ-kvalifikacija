@@ -58,3 +58,19 @@ test('teams page is available to authenticated users', function () {
         ->assertSee('Enter your coach')
         ->assertDontSee('Create a team');
 });
+
+test('team coach is treated as manager even when their pivot role is stale', function () {
+    $coach = User::factory()->create(['role' => 'coach']);
+    $student = User::factory()->create(['role' => 'student']);
+    $team = Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Varsity A',
+        'join_code' => 'TEAM1234',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'student']);
+    $team->members()->attach($student->id, ['role' => 'student']);
+
+    expect($team->manager()?->id)->toBe($coach->id)
+        ->and($team->students()->pluck('id')->all())->not->toContain($coach->id);
+});

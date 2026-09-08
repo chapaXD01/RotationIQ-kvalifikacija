@@ -11,6 +11,21 @@ use Illuminate\View\View;
 
 class TeamController extends Controller
 {
+    public function assignRole(Request $request, Team $team, int $userId): RedirectResponse
+    {
+        abort_unless($request->user()->id === $team->coach_id, 403);
+
+        $validated = $request->validate([
+            'role' => ['required', 'in:manager,assistant_manager,student'],
+        ]);
+
+        $team->members()->updateExistingPivot($userId, [
+            'role' => $validated['role'],
+        ]);
+
+        return back()->with('success', 'Team role updated.');
+    }
+
     public function index(Request $request): View
     {
         $teams = $request->user()->teams()->with(['coach', 'members', 'messages.user'])->latest()->get();
@@ -36,7 +51,7 @@ class TeamController extends Controller
             'join_code' => $joinCode,
         ]);
 
-        $team->members()->attach($request->user()->id);
+        $team->members()->attach($request->user()->id, ['role' => 'manager']);
 
         return to_route('teams.index')->with('success', 'Team created. Share the join code with your students.');
     }
@@ -57,7 +72,7 @@ class TeamController extends Controller
             return to_route('teams.index')->with('success', 'You are already a member of this team.');
         }
 
-        $team->members()->attach($request->user()->id);
+        $team->members()->attach($request->user()->id, ['role' => 'student']);
 
         return to_route('teams.index')->with('success', "You joined {$team->name}.");
     }

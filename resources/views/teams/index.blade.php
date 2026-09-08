@@ -70,10 +70,42 @@
                                     <span class="text-xs uppercase tracking-wide text-slate-400">Join code</span>
                                     <code class="text-lg font-bold tracking-[0.2em] text-slate-300">{{ $team->join_code }}</code>
                                 </div>
-                                <div class="mt-4 flex flex-wrap gap-2">
-                                    @foreach ($team->members as $member)
-                                        <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-slate-300">{{ $member->name }}</span>
-                                    @endforeach
+                                <div class="mt-4 space-y-3">
+                                    <div>
+                                        <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Manager</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @php $manager = $team->manager(); @endphp
+                                            @if ($manager)
+                                                <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-slate-300">{{ $manager->name }}</span>
+                                            @else
+                                                <span class="text-xs text-slate-400">No manager assigned</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Assistant manager</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @php $assistantManagers = $team->members->filter(fn ($member) => $member->pivot->role === 'assistant_manager'); @endphp
+                                            @forelse ($assistantManagers as $member)
+                                                <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-slate-300">{{ $member->name }}</span>
+                                            @empty
+                                                <span class="text-xs text-slate-400">No assistant managers</span>
+                                            @endforelse
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Students</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @php $students = $team->students(); @endphp
+                                            @forelse ($students as $member)
+                                                <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-slate-300">{{ $member->name }}</span>
+                                            @empty
+                                                <span class="text-xs text-slate-400">No students yet</span>
+                                            @endforelse
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="mt-5 pt-4 border-t border-white/10">

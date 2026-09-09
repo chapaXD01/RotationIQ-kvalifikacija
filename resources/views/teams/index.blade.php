@@ -58,7 +58,40 @@
                 @else
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         @foreach ($teams as $team)
-                            <article class="p-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
+                            @php
+                                $canManageTeam = auth()->id() === $team->coach_id || $team->members->contains(fn ($member) => $member->id === auth()->id() && $member->pivot->role === 'manager');
+                            @endphp
+                            <article
+                                class="relative p-5 rounded-2xl border border-white/10 bg-white/5"
+                                @if ($canManageTeam)
+                                    x-data="{
+                                        menuOpen: false,
+                                        menuX: 0,
+                                        menuY: 0,
+                                        selectedMember: {},
+                                        memberRoleUrl: @js(route('teams.members.role', [$team, '__USER__'])),
+                                        openMemberMenu(event, member) {
+                                            this.selectedMember = member;
+                                            const menuWidth = 256;
+                                            const menuHeight = 230;
+                                            const gap = 12;
+                                            const rightX = event.clientX + gap;
+                                            const leftX = event.clientX - menuWidth - gap;
+                                            const belowY = event.clientY + gap;
+                                            const aboveY = event.clientY - menuHeight - gap;
+                                            this.menuX = rightX + menuWidth <= window.innerWidth
+                                                ? rightX
+                                                : Math.max(8, leftX);
+                                            this.menuY = belowY + menuHeight <= window.innerHeight
+                                                ? belowY
+                                                : Math.max(8, aboveY);
+                                            this.menuOpen = true;
+                                        }
+                                    }"
+                                    @click.outside="menuOpen = false"
+                                    @keydown.escape.window="menuOpen = false"
+                                @endif
+                            >
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <h3 class="font-bold text-white text-lg">{{ $team->name }}</h3>
@@ -106,7 +139,76 @@
                                             @endforelse
                                         </div>
                                     </div>
+
+                                    <div class="pt-1">
+                                        <div class="mb-2 flex items-center justify-between gap-3">
+                                            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Roster</p>
+                                            @if ($canManageTeam)
+                                                <span class="text-[10px] text-slate-500">Right-click a member to edit</span>
+                                            @endif
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            @foreach ($team->members as $member)
+                                                @php
+                                                    $memberRole = $member->pivot->role ?? 'student';
+                                                    $memberPosition = $member->pivot->position;
+                                                @endphp
+                                                @if ($canManageTeam)
+                                                    <button
+                                                        type="button"
+                                                        class="flex w-full items-center justify-between gap-3 rounded-lg border border-white/5 bg-black/10 px-3 py-2 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
+                                                        @contextmenu.prevent="openMemberMenu($event, { id: {{ $member->id }}, name: @js($member->name), role: @js($memberRole), position: @js($memberPosition) })"
+                                                    >
+                                                @else
+                                                    <div class="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-black/10 px-3 py-2">
+                                                @endif
+                                                        <span class="min-w-0 truncate text-sm text-slate-200">{{ $member->name }}</span>
+                                                        <span class="flex shrink-0 items-center gap-1.5">
+                                                            @if ($memberPosition)
+                                                                <span class="rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-200">{{ $memberPosition }}</span>
+                                                            @endif
+                                                            <span class="text-[10px] capitalize text-slate-500">{{ str_replace('_', ' ', $memberRole) }}</span>
+                                                        </span>
+                                                @if ($canManageTeam)
+                                                    </button>
+                                                @else
+                                                    </div>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 </div>
+
+                                @if ($canManageTeam)
+                                    <div
+                                        x-cloak
+                                        x-show="menuOpen"
+                                        x-transition
+                                        class="fixed z-50 w-64 rounded-xl border border-white/15 bg-slate-900 p-3 shadow-2xl shadow-black/40"
+                                        :style="`left: ${menuX}px; top: ${menuY}px`"
+                                    >
+                                        <p class="mb-3 truncate text-sm font-semibold text-white" x-text="selectedMember.name"></p>
+                                        <form method="POST" x-bind:action="memberRoleUrl.replace('__USER__', selectedMember.id)" @submit="menuOpen = false">
+                                            @csrf
+                                            <label class="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Team role</label>
+                                            <select name="role" x-model="selectedMember.role" class="mb-3 w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
+                                                <option value="student">Student</option>
+                                                <option value="assistant_manager">Assistant manager</option>
+                                                <option value="manager">Manager</option>
+                                            </select>
+                                            <label class="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Playing position</label>
+                                            <select name="position" x-model="selectedMember.position" class="w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
+                                                <option value="">No position</option>
+                                                <option value="S">S - Setter</option>
+                                                <option value="MB">MB - Middle blocker</option>
+                                                <option value="OT">OT - Outside hitter</option>
+                                                <option value="OP">OP - Opposite hitter</option>
+                                                <option value="L">L - Libero</option>
+                                            </select>
+                                            <button type="submit" class="mt-3 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save changes</button>
+                                        </form>
+                                    </div>
+                                @endif
 
                                 <div class="mt-5 pt-4 border-t border-white/10">
                                     <div class="mb-3 flex items-center justify-between">

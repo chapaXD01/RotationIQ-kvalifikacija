@@ -13,14 +13,22 @@ class TeamController extends Controller
 {
     public function assignRole(Request $request, Team $team, int $userId): RedirectResponse
     {
-        abort_unless($request->user()->id === $team->coach_id, 403);
+        abort_unless(
+            $request->user()->id === $team->coach_id
+                || $team->members()->whereKey($request->user()->id)->wherePivot('role', 'manager')->exists(),
+            403
+        );
+
+        abort_unless($team->members()->whereKey($userId)->exists(), 404);
 
         $validated = $request->validate([
             'role' => ['required', 'in:manager,assistant_manager,student'],
+            'position' => ['nullable', 'in:MB,OT,S,OP,L'],
         ]);
 
         $team->members()->updateExistingPivot($userId, [
             'role' => $validated['role'],
+            'position' => $validated['position'] ?? null,
         ]);
 
         return back()->with('success', 'Team role updated.');

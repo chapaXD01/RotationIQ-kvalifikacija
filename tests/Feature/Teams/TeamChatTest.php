@@ -71,3 +71,57 @@ test('coach can assign a team member as assistant manager', function () {
         'role' => 'assistant_manager',
     ]);
 });
+
+test('team manager can assign a member a volleyball position', function () {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $manager = \App\Models\User::factory()->create(['role' => 'student']);
+    $player = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Position Team',
+        'join_code' => 'POS54321',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($manager->id, ['role' => 'manager']);
+    $team->members()->attach($player->id, ['role' => 'student']);
+
+    $response = $this->actingAs($manager)->post(route('teams.members.role', [$team, $player]), [
+        'role' => 'student',
+        'position' => 'MB',
+    ]);
+
+    $response->assertRedirect();
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $player->id,
+        'role' => 'student',
+        'position' => 'MB',
+    ]);
+});
+
+test('team manager can assign the expanded volleyball positions', function (string $position) {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $player = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Expanded Positions Team',
+        'join_code' => fake()->unique()->regexify('[A-Z0-9]{8}'),
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($player->id, ['role' => 'student']);
+
+    $this->actingAs($coach)->post(route('teams.members.role', [$team, $player]), [
+        'role' => 'student',
+        'position' => $position,
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $player->id,
+        'position' => $position,
+    ]);
+})->with(['S', 'OP', 'L']);

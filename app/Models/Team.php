@@ -23,6 +23,7 @@ class Team extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('role')
             ->withPivot('position')
+            ->withPivot('attendance')
             ->withTimestamps();
     }
 

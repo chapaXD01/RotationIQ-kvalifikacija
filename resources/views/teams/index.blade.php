@@ -73,7 +73,7 @@
                                         openMemberMenu(event, member) {
                                             this.selectedMember = member;
                                             const menuWidth = 256;
-                                            const menuHeight = 230;
+                                            const menuHeight = 290;
                                             const gap = 12;
                                             const rightX = event.clientX + gap;
                                             const leftX = event.clientX - menuWidth - gap;
@@ -152,12 +152,13 @@
                                                 @php
                                                     $memberRole = $member->pivot->role ?? 'student';
                                                     $memberPosition = $member->pivot->position;
+                                                    $memberAttendance = $member->pivot->attendance ?? 'present';
                                                 @endphp
                                                 @if ($canManageTeam)
                                                     <button
                                                         type="button"
                                                         class="flex w-full items-center justify-between gap-3 rounded-lg border border-white/5 bg-black/10 px-3 py-2 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
-                                                        @contextmenu.prevent="openMemberMenu($event, { id: {{ $member->id }}, name: @js($member->name), role: @js($memberRole), position: @js($memberPosition) })"
+                                                        @contextmenu.prevent="openMemberMenu($event, { id: {{ $member->id }}, name: @js($member->name), role: @js($memberRole), position: @js($memberPosition), attendance: @js($memberAttendance) })"
                                                     >
                                                 @else
                                                     <div class="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-black/10 px-3 py-2">
@@ -167,6 +168,7 @@
                                                             @if ($memberPosition)
                                                                 <span class="rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-200">{{ $memberPosition }}</span>
                                                             @endif
+                                                            <span class="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] capitalize text-emerald-200">{{ $memberAttendance }}</span>
                                                             <span class="text-[10px] capitalize text-slate-500">{{ str_replace('_', ' ', $memberRole) }}</span>
                                                         </span>
                                                 @if ($canManageTeam)
@@ -204,6 +206,12 @@
                                                 <option value="OT">OT - Outside hitter</option>
                                                 <option value="OP">OP - Opposite hitter</option>
                                                 <option value="L">L - Libero</option>
+                                            </select>
+                                            <label class="mb-1 mt-3 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Attendance</label>
+                                            <select name="attendance" x-model="selectedMember.attendance" class="w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
+                                                <option value="present">Present</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="substitute">Substitute</option>
                                             </select>
                                             <button type="submit" class="mt-3 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save changes</button>
                                         </form>

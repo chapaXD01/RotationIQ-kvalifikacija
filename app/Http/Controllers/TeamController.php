@@ -24,14 +24,16 @@ class TeamController extends Controller
         $validated = $request->validate([
             'role' => ['required', 'in:manager,assistant_manager,student'],
             'position' => ['nullable', 'in:MB,OT,S,OP,L'],
+            'attendance' => ['nullable', 'in:present,absent,substitute'],
         ]);
 
         $team->members()->updateExistingPivot($userId, [
             'role' => $validated['role'],
             'position' => $validated['position'] ?? null,
+            'attendance' => $validated['attendance'] ?? 'present',
         ]);
 
-        return back()->with('success', 'Team role updated.');
+        return back()->with('success', 'Team member updated.');
     }
 
     public function index(Request $request): View

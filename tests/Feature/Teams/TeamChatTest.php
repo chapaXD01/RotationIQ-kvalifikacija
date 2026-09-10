@@ -101,6 +101,32 @@ test('team manager can assign a member a volleyball position', function () {
     ]);
 });
 
+test('team manager can assign player attendance', function () {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $player = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Attendance Team',
+        'join_code' => 'ATT54321',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($player->id, ['role' => 'student']);
+
+    $response = $this->actingAs($coach)->post(route('teams.members.role', [$team, $player]), [
+        'role' => 'student',
+        'attendance' => 'substitute',
+    ]);
+
+    $response->assertRedirect();
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $player->id,
+        'attendance' => 'substitute',
+    ]);
+});
+
 test('team manager can assign the expanded volleyball positions', function (string $position) {
     $coach = \App\Models\User::factory()->create(['role' => 'coach']);
     $player = \App\Models\User::factory()->create(['role' => 'student']);

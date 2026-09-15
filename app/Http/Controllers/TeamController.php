@@ -11,29 +11,87 @@ use Illuminate\View\View;
 
 class TeamController extends Controller
 {
-    public function assignRole(Request $request, Team $team, int $userId): RedirectResponse
+    public function updateRole(Request $request, Team $team, int $userId): RedirectResponse
     {
-        abort_unless(
-            $request->user()->id === $team->coach_id
-                || $team->members()->whereKey($request->user()->id)->wherePivot('role', 'manager')->exists(),
-            403
-        );
-
-        abort_unless($team->members()->whereKey($userId)->exists(), 404);
+        $actorRole = $this->authorizeRoleUpdate($request, $team, $userId);
 
         $validated = $request->validate([
             'role' => ['required', 'in:manager,assistant_manager,student'],
+        ]);
+
+        if ($actorRole !== 'coach') {
+            abort_unless($validated['role'] !== 'manager', 403);
+        }
+
+        $team->members()->updateExistingPivot($userId, $validated);
+
+        return back()->with('success', 'Team member role updated.');
+    }
+
+    public function updatePosition(Request $request, Team $team, int $userId): RedirectResponse
+    {
+        $this->authorizeRosterUpdate($request, $team, $userId);
+
+        $validated = $request->validate([
             'position' => ['nullable', 'in:MB,OT,S,OP,L'],
-            'attendance' => ['nullable', 'in:present,absent,substitute'],
         ]);
 
-        $team->members()->updateExistingPivot($userId, [
-            'role' => $validated['role'],
-            'position' => $validated['position'] ?? null,
-            'attendance' => $validated['attendance'] ?? 'present',
+        $team->members()->updateExistingPivot($userId, $validated);
+
+        return back()->with('success', 'Team member position updated.');
+    }
+
+    public function updateAttendance(Request $request, Team $team, int $userId): RedirectResponse
+    {
+        $this->authorizeRosterUpdate($request, $team, $userId);
+
+        $validated = $request->validate([
+            'attendance' => ['required', 'in:present,absent,substitute'],
         ]);
 
-        return back()->with('success', 'Team member updated.');
+        $team->members()->updateExistingPivot($userId, $validated);
+
+        return back()->with('success', 'Team member attendance updated.');
+    }
+
+    private function authorizeRoleUpdate(Request $request, Team $team, int $userId): string
+    {
+        $currentRole = $this->authorizeRosterUpdate($request, $team, $userId);
+
+        if ($request->user()->role === 'coach' && $request->user()->id === $team->coach_id) {
+            return 'coach';
+        }
+
+        $actorRole = $team->members()
+            ->whereKey($request->user()->id)
+            ->value('team_user.role');
+
+        abort_unless($actorRole === 'manager', 403);
+        abort_unless(in_array($currentRole, ['student', 'assistant_manager'], true), 403);
+
+        return $actorRole;
+    }
+
+    private function authorizeRosterUpdate(Request $request, Team $team, int $userId): ?string
+    {
+        $member = $team->members()->whereKey($userId)->first();
+        abort_unless($member, 404);
+
+        if ($request->user()->role === 'coach' && $request->user()->id === $team->coach_id) {
+            return $member->pivot->role;
+        }
+
+        $actorRole = $team->members()
+            ->whereKey($request->user()->id)
+            ->value('team_user.role');
+
+        abort_unless(in_array($actorRole, ['manager', 'assistant_manager'], true), 403);
+
+        if ($actorRole === 'assistant_manager') {
+            abort_unless($member->pivot->role === 'student', 403);
+        }
+
+        return $member->pivot->role;
     }
 
     public function index(Request $request): View
@@ -50,7 +108,7 @@ class TeamController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
         ]);
-
+ // join code generator
         do {
             $joinCode = Str::upper(Str::random(8));
         } while (Team::where('join_code', $joinCode)->exists());

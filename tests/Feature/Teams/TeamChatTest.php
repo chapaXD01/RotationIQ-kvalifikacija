@@ -87,8 +87,7 @@ test('team manager can assign a member a volleyball position', function () {
     $team->members()->attach($manager->id, ['role' => 'manager']);
     $team->members()->attach($player->id, ['role' => 'student']);
 
-    $response = $this->actingAs($manager)->post(route('teams.members.role', [$team, $player]), [
-        'role' => 'student',
+    $response = $this->actingAs($manager)->post(route('teams.members.position', [$team, $player]), [
         'position' => 'MB',
     ]);
 
@@ -114,8 +113,7 @@ test('team manager can assign player attendance', function () {
     $team->members()->attach($coach->id, ['role' => 'manager']);
     $team->members()->attach($player->id, ['role' => 'student']);
 
-    $response = $this->actingAs($coach)->post(route('teams.members.role', [$team, $player]), [
-        'role' => 'student',
+    $response = $this->actingAs($coach)->post(route('teams.members.attendance', [$team, $player]), [
         'attendance' => 'substitute',
     ]);
 
@@ -124,6 +122,123 @@ test('team manager can assign player attendance', function () {
         'team_id' => $team->id,
         'user_id' => $player->id,
         'attendance' => 'substitute',
+    ]);
+});
+
+test('updating attendance preserves the player position', function () {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $player = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Attendance Preservation Team',
+        'join_code' => 'ATTPRES1',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($player->id, [
+        'role' => 'student',
+        'position' => 'MB',
+        'attendance' => 'present',
+    ]);
+
+    $this->actingAs($coach)->post(route('teams.members.attendance', [$team, $player]), [
+        'attendance' => 'absent',
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $player->id,
+        'position' => 'MB',
+        'attendance' => 'absent',
+    ]);
+});
+
+test('team manager cannot promote a member to manager', function () {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $manager = \App\Models\User::factory()->create(['role' => 'student']);
+    $player = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Manager Permissions Team',
+        'join_code' => 'MGRPERM1',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($manager->id, ['role' => 'manager']);
+    $team->members()->attach($player->id, ['role' => 'student']);
+
+    $this->actingAs($manager)->post(route('teams.members.role', [$team, $player]), [
+        'role' => 'manager',
+    ])->assertForbidden();
+
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $player->id,
+        'role' => 'student',
+    ]);
+});
+
+test('team manager cannot assign manager role to an assistant manager', function () {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $manager = \App\Models\User::factory()->create(['role' => 'student']);
+    $assistantManager = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Manager Role Boundary Team',
+        'join_code' => 'MGRBOUND',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($manager->id, ['role' => 'manager']);
+    $team->members()->attach($assistantManager->id, ['role' => 'assistant_manager']);
+
+    $this->actingAs($manager)->post(route('teams.members.role', [$team, $assistantManager]), [
+        'role' => 'manager',
+    ])->assertForbidden();
+
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $assistantManager->id,
+        'role' => 'assistant_manager',
+    ]);
+});
+
+test('assistant manager can update student roster data but not roles', function () {
+    $coach = \App\Models\User::factory()->create(['role' => 'coach']);
+    $assistantManager = \App\Models\User::factory()->create(['role' => 'student']);
+    $player = \App\Models\User::factory()->create(['role' => 'student']);
+
+    $team = \App\Models\Team::create([
+        'coach_id' => $coach->id,
+        'name' => 'Assistant Permissions Team',
+        'join_code' => 'ASSTPERM',
+    ]);
+
+    $team->members()->attach($coach->id, ['role' => 'manager']);
+    $team->members()->attach($assistantManager->id, ['role' => 'assistant_manager']);
+    $team->members()->attach($player->id, ['role' => 'student']);
+
+    $this->actingAs($assistantManager)->post(route('teams.members.position', [$team, $player]), [
+        'position' => 'L',
+    ])->assertRedirect();
+
+    $this->actingAs($assistantManager)->post(route('teams.members.attendance', [$team, $player]), [
+        'attendance' => 'absent',
+    ])->assertRedirect();
+
+    $this->actingAs($assistantManager)->post(route('teams.members.role', [$team, $player]), [
+        'role' => 'assistant_manager',
+    ])->assertForbidden();
+
+    $this->assertDatabaseHas('team_user', [
+        'team_id' => $team->id,
+        'user_id' => $player->id,
+        'role' => 'student',
+        'position' => 'L',
+        'attendance' => 'absent',
     ]);
 });
 
@@ -140,8 +255,7 @@ test('team manager can assign the expanded volleyball positions', function (stri
     $team->members()->attach($coach->id, ['role' => 'manager']);
     $team->members()->attach($player->id, ['role' => 'student']);
 
-    $this->actingAs($coach)->post(route('teams.members.role', [$team, $player]), [
-        'role' => 'student',
+    $this->actingAs($coach)->post(route('teams.members.position', [$team, $player]), [
         'position' => $position,
     ])->assertRedirect();
 

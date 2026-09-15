@@ -59,7 +59,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         @foreach ($teams as $team)
                             @php
-                                $canManageTeam = auth()->id() === $team->coach_id || $team->members->contains(fn ($member) => $member->id === auth()->id() && $member->pivot->role === 'manager');
+                                $currentMember = $team->members->firstWhere('id', auth()->id());
+                                $currentTeamRole = $currentMember?->pivot->role;
+                                $isCoach = auth()->user()->role === 'coach' && auth()->id() === $team->coach_id;
+                                $canManageTeam = $isCoach || in_array($currentTeamRole, ['manager', 'assistant_manager'], true);
+                                $canManageRoles = $isCoach || $currentTeamRole === 'manager';
                             @endphp
                             <article
                                 class="relative p-5 rounded-2xl border border-white/10 bg-white/5"
@@ -70,10 +74,12 @@
                                         menuY: 0,
                                         selectedMember: {},
                                         memberRoleUrl: @js(route('teams.members.role', [$team, '__USER__'])),
+                                        memberPositionUrl: @js(route('teams.members.position', [$team, '__USER__'])),
+                                        memberAttendanceUrl: @js(route('teams.members.attendance', [$team, '__USER__'])),
                                         openMemberMenu(event, member) {
                                             this.selectedMember = member;
                                             const menuWidth = 256;
-                                            const menuHeight = 290;
+                                            const menuHeight = 470;
                                             const gap = 12;
                                             const rightX = event.clientX + gap;
                                             const leftX = event.clientX - menuWidth - gap;
@@ -190,14 +196,23 @@
                                         :style="`left: ${menuX}px; top: ${menuY}px`"
                                     >
                                         <p class="mb-3 truncate text-sm font-semibold text-white" x-text="selectedMember.name"></p>
-                                        <form method="POST" x-bind:action="memberRoleUrl.replace('__USER__', selectedMember.id)" @submit="menuOpen = false">
+                                        @if ($canManageRoles)
+                                            <form method="POST" x-bind:action="memberRoleUrl.replace('__USER__', selectedMember.id)" @submit="menuOpen = false">
+                                                @csrf
+                                                <label class="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Team role</label>
+                                                <select name="role" x-model="selectedMember.role" class="mb-2 w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
+                                                    <option value="student">Student</option>
+                                                    <option value="assistant_manager">Assistant manager</option>
+                                                    @if ($isCoach)
+                                                        <option value="manager">Manager</option>
+                                                    @endif
+                                                </select>
+                                                <button type="submit" class="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save role</button>
+                                            </form>
+                                        @endif
+
+                                        <form method="POST" x-bind:action="memberPositionUrl.replace('__USER__', selectedMember.id)" @submit="menuOpen = false" class="{{ $canManageRoles ? 'mt-3 border-t border-white/10 pt-3' : '' }}">
                                             @csrf
-                                            <label class="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Team role</label>
-                                            <select name="role" x-model="selectedMember.role" class="mb-3 w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
-                                                <option value="student">Student</option>
-                                                <option value="assistant_manager">Assistant manager</option>
-                                                <option value="manager">Manager</option>
-                                            </select>
                                             <label class="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Playing position</label>
                                             <select name="position" x-model="selectedMember.position" class="w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
                                                 <option value="">No position</option>
@@ -207,13 +222,18 @@
                                                 <option value="OP">OP - Opposite hitter</option>
                                                 <option value="L">L - Libero</option>
                                             </select>
-                                            <label class="mb-1 mt-3 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Attendance</label>
+                                            <button type="submit" class="mt-2 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save position</button>
+                                        </form>
+
+                                        <form method="POST" x-bind:action="memberAttendanceUrl.replace('__USER__', selectedMember.id)" @submit="menuOpen = false" class="mt-3 border-t border-white/10 pt-3">
+                                            @csrf
+                                            <label class="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Attendance</label>
                                             <select name="attendance" x-model="selectedMember.attendance" class="w-full rounded-lg border-white/10 bg-white/10 text-sm text-white focus:border-blue-400 focus:ring-blue-400">
                                                 <option value="present">Present</option>
                                                 <option value="absent">Absent</option>
                                                 <option value="substitute">Substitute</option>
                                             </select>
-                                            <button type="submit" class="mt-3 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save changes</button>
+                                            <button type="submit" class="mt-2 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save attendance</button>
                                         </form>
                                     </div>
                                 @endif

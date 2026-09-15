@@ -23,7 +23,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
     Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
     Route::post('/teams/join', [TeamController::class, 'join'])->name('teams.join');
-    Route::post('/teams/{team}/members/{user}/role', [TeamController::class, 'assignRole'])->name('teams.members.role');
+    Route::post('/teams/{team}/members/{user}/role', [TeamController::class, 'updateRole'])->name('teams.members.role');
+    Route::post('/teams/{team}/members/{user}/position', [TeamController::class, 'updatePosition'])->name('teams.members.position');
+    Route::post('/teams/{team}/members/{user}/attendance', [TeamController::class, 'updateAttendance'])->name('teams.members.attendance');
     Route::post('/teams/{team}/messages', [TeamController::class, 'storeMessage'])->name('teams.messages.store');
 });
 

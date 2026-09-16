@@ -245,7 +245,7 @@
                                     </div>
 
                                     <div class="space-y-2 max-h-52 overflow-y-auto pr-1">
-                                        @forelse ($team->messages->take(6) as $message)
+                                        @forelse ($team->messages->slice(-6) as $message)
                                             <div class="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
                                                 <div class="mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-slate-400">
                                                     <span>{{ $message->user->name }}</span>

@@ -29,7 +29,7 @@ class Team extends Model
 
     public function messages()
     {
-        return $this->hasMany(TeamMessage::class)->latest();
+        return $this->hasMany(TeamMessage::class)->oldest()->oldest('id');
     }
 
     public function manager()

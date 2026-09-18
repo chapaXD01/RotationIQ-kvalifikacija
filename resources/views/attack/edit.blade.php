@@ -47,18 +47,25 @@
                             <svg id="lines" width="500" height="400"
                                  style="position:absolute; top:0; left:0; pointer-events:none;"></svg>
 
-                            @php $players = json_decode($rotation->players, true); @endphp
-                            @foreach ($players as $player)
-                                <div class="player"
-                                     data-pos="{{ $player['pos'] }}"
-                                     data-role="{{ $player['role'] }}"
-                                     style="top: {{ $player['top'] }}px; left: {{ $player['left'] }}px">
-                                    {{ $player['role'] }}
-                                </div>
-                            @endforeach
+                            @if($rotation->team_id && count($teams))
+                                {{-- Players are injected by script.js from the rotation's team roster --}}
+                            @else
+                                @php $players = json_decode($rotation->players, true); @endphp
+                                @foreach ($players as $player)
+                                    <div class="player"
+                                         data-pos="{{ $player['pos'] }}"
+                                         data-role="{{ $player['role'] }}"
+                                         style="top: {{ $player['top'] }}px; left: {{ $player['left'] }}px">
+                                        {{ $player['role'] }}
+                                    </div>
+                                @endforeach
+                            @endif
                         </div>
                     </div>
                 </div>
+
+                {{-- Right column: settings + your players --}}
+                <div class="flex flex-col gap-6">
 
                 {{-- Settings panel --}}
                 <div class="rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-white/5 backdrop-blur-md flex flex-col">
@@ -125,10 +132,54 @@
                     </div>
                 </div>
 
+                @if($rotation->team_id && count($teams))
+                    {{-- Your players panel --}}
+                    <div class="rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-white/5 backdrop-blur-md flex flex-col">
+                        <div class="px-5 py-4 border-b border-white/10 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block"></span>
+                            <span class="text-sm font-semibold text-white tracking-wide">Your Players</span>
+                        </div>
+
+                        <div class="p-5 flex flex-col gap-4">
+                            <div>
+                                <label for="teamSelect" class="block text-xs font-semibold uppercase tracking-widest text-purple-300/80 mb-2">
+                                    {{ __('Team') }}
+                                </label>
+                                <select
+                                    id="teamSelect"
+                                    class="w-full px-4 py-2.5 rounded-xl text-white text-sm bg-slate-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/60 transition"
+                                >
+                                    <option value="" style="background:#1e293b;">Select a team&hellip;</option>
+                                </select>
+                            </div>
+
+                            <p class="text-xs text-white/50 leading-relaxed">
+                                Click a bench player, then click a court spot to place or substitute them. Click a player already on the court to send them back to the bench.
+                            </p>
+
+                            <div id="benchList" class="flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+                @endif
+
+                </div>
+
             </div>
         </div>
     </div>
 
+    @if($rotation->team_id && count($teams))
+        @php
+            $rotationCurrent = [
+                'team_id' => $rotation->team_id,
+                'players' => json_decode($rotation->players, true),
+            ];
+        @endphp
+        <script>
+            window.ROTATION_TEAMS = @json($teams);
+            window.ROTATION_CURRENT = @json($rotationCurrent);
+        </script>
+    @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="{{ asset('script.js') }}"></script>
 </x-app-layout>

@@ -1,35 +1,275 @@
-const players = document.querySelectorAll('.player');
 const court = document.getElementById('court');
 
-players.forEach(player => {
-    let offsetX = 0;
-    let offsetY = 0;
+// attaches drag-to-reposition to every .player inside the court, and tells
+// the roster/bench logic (if active) about plain clicks vs. drags
+function attachDragHandlers(courtEl) {
+    if (!courtEl) return;
 
-    player.addEventListener('mousedown', e => {
-        offsetX = e.offsetX;
-        offsetY = e.offsetY;
+    courtEl.querySelectorAll('.player').forEach(player => {
+        if (player.dataset.dragBound) return;
+        player.dataset.dragBound = '1';
 
-        function move(e) {
-            const rect = court.getBoundingClientRect();
+        let offsetX = 0;
+        let offsetY = 0;
 
-            let x = e.clientX - rect.left - offsetX;
-            let y = e.clientY - rect.top - offsetY;
+        player.addEventListener('mousedown', e => {
+            offsetX = e.offsetX;
+            offsetY = e.offsetY;
+            let moved = false;
 
-            
-            x = Math.max(0, Math.min(x, court.clientWidth - player.clientWidth));
-            y = Math.max(0, Math.min(y, court.clientHeight - player.clientHeight));
+            function move(e) {
+                moved = true;
+                const rect = courtEl.getBoundingClientRect();
 
-            player.style.left = x + 'px';
-            player.style.top = y + 'px';
+                let x = e.clientX - rect.left - offsetX;
+                let y = e.clientY - rect.top - offsetY;
+
+
+                x = Math.max(0, Math.min(x, courtEl.clientWidth - player.clientWidth));
+                y = Math.max(0, Math.min(y, courtEl.clientHeight - player.clientHeight));
+
+                player.style.left = x + 'px';
+                player.style.top = y + 'px';
+            }
+
+            document.addEventListener('mousemove', move);
+
+            document.addEventListener('mouseup', () => {
+                document.removeEventListener('mousemove', move);
+
+                if (moved) {
+                    if (window.rememberCourtPosition) {
+                        window.rememberCourtPosition(player.dataset.pos, player.style.top, player.style.left);
+                    }
+                } else if (window.handleCourtSlotClick) {
+                    window.handleCourtSlotClick(player.dataset.pos);
+                }
+            }, { once: true });
+        });
+    });
+}
+
+attachDragHandlers(court);
+
+// Team roster / bench / substitution — only active on rotation create/edit
+// pages that render a #teamSelect + #benchList (i.e. the manager has a team).
+(function initTeamRoster() {
+    const teamSelect = document.getElementById('teamSelect');
+    const benchList = document.getElementById('benchList');
+
+    if (!teamSelect || !court || !benchList) return;
+
+    const teams = window.ROTATION_TEAMS || [];
+    const current = window.ROTATION_CURRENT || null;
+
+    const zoneCenters = {
+        1: { top: 278, left: 395 },
+        2: { top: 78,  left: 395 },
+        3: { top: 78,  left: 228 },
+        4: { top: 78,  left: 61  },
+        5: { top: 278, left: 61  },
+        6: { top: 278, left: 228 }
+    };
+
+    const positionLabels = {
+        S: 'Setter',
+        MB: 'Middle blocker',
+        OT: 'Outside hitter',
+        RS: 'Right side',
+        L: 'Libero'
+    };
+
+    let selectedTeam = null;
+    let courtSlots = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+    let courtPositions = {};
+    let selectedBenchPlayerId = null;
+
+    Object.keys(zoneCenters).forEach(pos => {
+        courtPositions[pos] = { ...zoneCenters[pos] };
+    });
+
+    teams.forEach(team => {
+        const opt = document.createElement('option');
+        opt.value = team.id;
+        opt.textContent = team.name;
+        opt.style.background = '#1e293b';
+        teamSelect.appendChild(opt);
+    });
+
+    function findTeam(id) {
+        return teams.find(t => String(t.id) === String(id)) || null;
+    }
+
+    function seatedIds() {
+        return Object.values(courtSlots).filter(Boolean).map(p => String(p.id));
+    }
+
+    function playerLabel(position, name) {
+        if (position) return position;
+        return name ? name.trim().charAt(0).toUpperCase() : '?';
+    }
+
+    function tooltipFor(name, position) {
+        return position ? `${name} — ${positionLabels[position] || position}` : name;
+    }
+
+    function renderCourt() {
+        court.querySelectorAll('.player, .empty-slot').forEach(el => el.remove());
+
+        Object.keys(zoneCenters).forEach(pos => {
+            const occupant = courtSlots[pos];
+            const coords = courtPositions[pos] || zoneCenters[pos];
+
+            if (occupant) {
+                const el = document.createElement('div');
+                el.className = 'player';
+                el.dataset.pos = pos;
+                el.dataset.role = occupant.position || '';
+                el.dataset.userId = occupant.id;
+                el.dataset.name = occupant.name;
+                el.style.top = coords.top + 'px';
+                el.style.left = coords.left + 'px';
+                el.textContent = playerLabel(occupant.position, occupant.name);
+                el.title = tooltipFor(occupant.name, occupant.position);
+                court.appendChild(el);
+            } else {
+                const el = document.createElement('div');
+                el.className = 'empty-slot';
+                el.dataset.pos = pos;
+                el.style.top = coords.top + 'px';
+                el.style.left = coords.left + 'px';
+                el.textContent = '+';
+                el.title = 'Click to place a player here';
+                el.addEventListener('click', () => handleSlotClick(pos));
+                court.appendChild(el);
+            }
+        });
+
+        attachDragHandlers(court);
+    }
+
+    function renderBench() {
+        benchList.innerHTML = '';
+
+        if (!selectedTeam) {
+            benchList.innerHTML = '<p class="bench-empty">Select a team to see your players.</p>';
+            return;
         }
 
-        document.addEventListener('mousemove', move);
+        const seated = seatedIds();
+        const bench = selectedTeam.players.filter(p => !seated.includes(String(p.id)));
 
-        document.addEventListener('mouseup', () => {
-            document.removeEventListener('mousemove', move);
-        }, { once: true });
-    });
-});
+        if (bench.length === 0) {
+            benchList.innerHTML = '<p class="bench-empty">Everyone is on the court.</p>';
+            return;
+        }
+
+        bench.forEach(player => {
+            const hasPosition = !!player.position;
+
+            const item = document.createElement('div');
+            item.className = 'bench-item'
+                + (String(player.id) === String(selectedBenchPlayerId) ? ' selected' : '')
+                + (hasPosition ? '' : ' bench-item-disabled');
+            item.title = hasPosition
+                ? tooltipFor(player.name, player.position)
+                : `${player.name} has no court position set — assign one in the team roster before adding them to a rotation.`;
+
+            const name = document.createElement('span');
+            name.textContent = player.name;
+            item.appendChild(name);
+
+            const badge = document.createElement('span');
+            badge.className = 'bench-position' + (hasPosition ? '' : ' bench-position-none');
+            badge.textContent = hasPosition ? player.position : 'No position';
+            item.appendChild(badge);
+
+            if (hasPosition) {
+                item.addEventListener('click', () => {
+                    selectedBenchPlayerId = (String(selectedBenchPlayerId) === String(player.id)) ? null : player.id;
+                    renderBench();
+                });
+            }
+
+            benchList.appendChild(item);
+        });
+    }
+
+    // clicking a bench player then a court slot substitutes them in;
+    // clicking an occupied slot with nothing selected benches that player
+    function handleSlotClick(pos) {
+        if (!selectedTeam) return;
+
+        if (selectedBenchPlayerId) {
+            const incoming = selectedTeam.players.find(p => String(p.id) === String(selectedBenchPlayerId));
+
+            if (incoming && incoming.position) {
+                courtSlots[pos] = { id: incoming.id, name: incoming.name, position: incoming.position };
+            }
+
+            selectedBenchPlayerId = null;
+        } else if (courtSlots[pos]) {
+            courtSlots[pos] = null;
+        }
+
+        renderCourt();
+        renderBench();
+    }
+
+    window.handleCourtSlotClick = handleSlotClick;
+    window.rememberCourtPosition = function (pos, top, left) {
+        courtPositions[pos] = { top: parseFloat(top), left: parseFloat(left) };
+    };
+
+    function autoFillFromRoster(players) {
+        courtSlots = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+        const positions = Object.keys(zoneCenters);
+
+        // players with no assigned court position can't be auto-placed —
+        // they stay on the bench until a position is set on the team roster
+        players.filter(p => p.position).slice(0, 6).forEach((player, index) => {
+            courtSlots[positions[index]] = { id: player.id, name: player.name, position: player.position };
+        });
+    }
+
+    function selectTeam(teamId, seedPlayers) {
+        selectedTeam = findTeam(teamId);
+        selectedBenchPlayerId = null;
+        courtSlots = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+
+        if (selectedTeam && seedPlayers && seedPlayers.length) {
+            seedPlayers.forEach(sp => {
+                if (!sp.pos || !sp.user_id) return;
+
+                const rosterPlayer = selectedTeam.players.find(p => String(p.id) === String(sp.user_id));
+
+                courtSlots[sp.pos] = {
+                    id: sp.user_id,
+                    name: sp.name || (rosterPlayer ? rosterPlayer.name : sp.role),
+                    position: sp.role
+                };
+                courtPositions[sp.pos] = { top: parseFloat(sp.top), left: parseFloat(sp.left) };
+            });
+        } else if (selectedTeam) {
+            autoFillFromRoster(selectedTeam.players);
+        }
+
+        renderCourt();
+        renderBench();
+    }
+
+    teamSelect.addEventListener('change', () => selectTeam(teamSelect.value));
+
+    if (current && current.team_id && findTeam(current.team_id)) {
+        teamSelect.value = current.team_id;
+        selectTeam(current.team_id, current.players);
+    } else if (teams.length === 1) {
+        teamSelect.value = teams[0].id;
+        selectTeam(teams[0].id);
+    } else {
+        renderBench();
+    }
+})();
 
 function getPlayers() {
     const data = {};
@@ -50,6 +290,11 @@ function getPlayers() {
 // check rotation
 
 function checkRotationWithVisuals() {
+    if (document.querySelectorAll('.player').length < 6) {
+        alert("Fill all 6 court positions before checking the rotation.");
+        return;
+    }
+
     const players = getPlayers();
     const svg = document.getElementById("lines");
     svg.innerHTML = "";
@@ -160,10 +405,15 @@ function saveRotation() {
             role: player.dataset.role,
             pos: player.dataset.pos,
             top: parseFloat(player.style.top),
-            left: parseFloat(player.style.left)
+            left: parseFloat(player.style.left),
+            user_id: player.dataset.userId || null,
+            name: player.dataset.name || null
         });
 
     });
+
+    const teamSelectEl = document.getElementById('teamSelect');
+    const teamId = (teamSelectEl && teamSelectEl.value) ? teamSelectEl.value : null;
 
     const token = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -182,7 +432,8 @@ function saveRotation() {
 
         body: JSON.stringify({
             name: name,
-            players: players
+            players: players,
+            team_id: teamId
         })
 
     })
@@ -283,9 +534,14 @@ function updateRotation(id) {
             role: player.dataset.role,
             pos: player.dataset.pos,
             top: parseFloat(player.style.top),
-            left: parseFloat(player.style.left)
+            left: parseFloat(player.style.left),
+            user_id: player.dataset.userId || null,
+            name: player.dataset.name || null
         });
     });
+
+    const teamSelectEl = document.getElementById('teamSelect');
+    const teamId = (teamSelectEl && teamSelectEl.value) ? teamSelectEl.value : null;
 
     const url = type === "attack"
         ? `/attack/${id}`
@@ -299,7 +555,8 @@ function updateRotation(id) {
         },
         body: JSON.stringify({
             name: name,
-            players: players
+            players: players,
+            team_id: teamId
         })
     })
     .then(res => res.json())

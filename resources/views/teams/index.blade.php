@@ -64,6 +64,8 @@
                                 $isCoach = auth()->user()->role === 'coach' && auth()->id() === $team->coach_id;
                                 $canManageTeam = $isCoach || in_array($currentTeamRole, ['manager', 'assistant_manager'], true);
                                 $canManageRoles = $isCoach || $currentTeamRole === 'manager';
+                                $canLeaveTeam = $currentMember && ! $isCoach;
+                                $canDisbandTeam = $isCoach;
                             @endphp
                             <article
                                 class="relative p-5 rounded-2xl border border-white/10 bg-white/5"
@@ -219,7 +221,7 @@
                                                 <option value="S">S - Setter</option>
                                                 <option value="MB">MB - Middle blocker</option>
                                                 <option value="OT">OT - Outside hitter</option>
-                                                <option value="OP">OP - Opposite hitter</option>
+                                                <option value="RS">RS - Right side</option>
                                                 <option value="L">L - Libero</option>
                                             </select>
                                             <button type="submit" class="mt-2 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">Save position</button>
@@ -273,6 +275,70 @@
                                         </button>
                                     </form>
                                 </div>
+
+                                @if ($canLeaveTeam)
+                                    <div class="mt-5 pt-4 border-t border-white/10" x-data="{ confirmLeave: false }">
+                                        <button
+                                            type="button"
+                                            @click="confirmLeave = true"
+                                            class="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+                                        >
+                                            Leave team
+                                        </button>
+
+                                        <div
+                                            x-cloak
+                                            x-show="confirmLeave"
+                                            x-transition
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+                                            @click.self="confirmLeave = false"
+                                            @keydown.escape.window="confirmLeave = false"
+                                        >
+                                            <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl shadow-black/40">
+                                                <h4 class="text-base font-bold text-white">Leave {{ $team->name }}?</h4>
+                                                <p class="mt-2 text-sm text-slate-400">You'll lose access to this team's roster, rotations, and chat unless you rejoin with the join code.</p>
+                                                <form method="POST" action="{{ route('teams.leave', $team) }}" class="mt-5 flex justify-end gap-3">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="button" @click="confirmLeave = false" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white">Cancel</button>
+                                                    <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500">Leave team</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if ($canDisbandTeam)
+                                    <div class="mt-5 pt-4 border-t border-white/10" x-data="{ confirmDisband: false }">
+                                        <button
+                                            type="button"
+                                            @click="confirmDisband = true"
+                                            class="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+                                        >
+                                            Disband team
+                                        </button>
+
+                                        <div
+                                            x-cloak
+                                            x-show="confirmDisband"
+                                            x-transition
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+                                            @click.self="confirmDisband = false"
+                                            @keydown.escape.window="confirmDisband = false"
+                                        >
+                                            <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl shadow-black/40">
+                                                <h4 class="text-base font-bold text-white">Disband {{ $team->name }}?</h4>
+                                                <p class="mt-2 text-sm text-slate-400">This permanently deletes the team, removes every member, and erases the team chat. This can't be undone.</p>
+                                                <form method="POST" action="{{ route('teams.destroy', $team) }}" class="mt-5 flex justify-end gap-3">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="button" @click="confirmDisband = false" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white">Cancel</button>
+                                                    <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500">Disband team</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
                             </article>
                         @endforeach
                     </div>

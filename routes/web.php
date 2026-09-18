@@ -27,6 +27,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/teams/{team}/members/{user}/position', [TeamController::class, 'updatePosition'])->name('teams.members.position');
     Route::post('/teams/{team}/members/{user}/attendance', [TeamController::class, 'updateAttendance'])->name('teams.members.attendance');
     Route::post('/teams/{team}/messages', [TeamController::class, 'storeMessage'])->name('teams.messages.store');
+    Route::delete('/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
+    Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
 });
 
 // Defence Rotations Routes

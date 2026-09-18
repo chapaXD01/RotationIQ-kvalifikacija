@@ -33,7 +33,7 @@ class TeamController extends Controller
         $this->authorizeRosterUpdate($request, $team, $userId);
 
         $validated = $request->validate([
-            'position' => ['nullable', 'in:MB,OT,S,OP,L'],
+            'position' => ['nullable', 'in:MB,OT,S,RS,L'],
         ]);
 
         $team->members()->updateExistingPivot($userId, $validated);
@@ -143,6 +143,26 @@ class TeamController extends Controller
         $team->members()->attach($request->user()->id, ['role' => 'student']);
 
         return to_route('teams.index')->with('success', "You joined {$team->name}.");
+    }
+
+    public function leave(Request $request, Team $team): RedirectResponse
+    {
+        abort_if($request->user()->id === $team->coach_id, 403, 'The coach cannot leave their own team.');
+
+        abort_unless($team->members()->whereKey($request->user()->id)->exists(), 404);
+
+        $team->members()->detach($request->user()->id);
+
+        return to_route('teams.index')->with('success', "You left {$team->name}.");
+    }
+
+    public function destroy(Request $request, Team $team): RedirectResponse
+    {
+        abort_unless($request->user()->id === $team->coach_id, 403);
+
+        $team->delete();
+
+        return to_route('teams.index')->with('success', "{$team->name} has been disbanded.");
     }
 
     public function storeMessage(Request $request, Team $team): RedirectResponse

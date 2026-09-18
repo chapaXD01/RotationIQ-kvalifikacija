@@ -264,4 +264,4 @@ test('team manager can assign the expanded volleyball positions', function (stri
         'user_id' => $player->id,
         'position' => $position,
     ]);
-})->with(['S', 'OP', 'L']);
+})->with(['S', 'RS', 'L']);

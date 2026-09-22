@@ -62,13 +62,15 @@ abstract class BaseRotationController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:255',
-            'players' => 'required|array|min:1',
-            'team_id' => 'nullable|integer|exists:teams,id',
+            'name'              => 'required|string|max:255',
+            'players'           => 'required|array|min:1',
+            'players.*.user_id' => 'nullable|integer',
+            'team_id'           => 'nullable|integer|exists:teams,id',
         ]);
 
         if (!empty($validated['team_id'])) {
             abort_unless($this->userManagesTeam((int) $validated['team_id']), 403);
+            abort_unless($this->playersBelongToTeam((int) $validated['team_id'], $validated['players']), 422, 'One or more players do not belong to the selected team.');
         }
 
         $model = $this->getModel();
@@ -86,13 +88,15 @@ abstract class BaseRotationController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:255',
-            'players' => 'required|array|min:1',
-            'team_id' => 'nullable|integer|exists:teams,id',
+            'name'              => 'required|string|max:255',
+            'players'           => 'required|array|min:1',
+            'players.*.user_id' => 'nullable|integer',
+            'team_id'           => 'nullable|integer|exists:teams,id',
         ]);
 
         if (!empty($validated['team_id'])) {
             abort_unless($this->userManagesTeam((int) $validated['team_id']), 403);
+            abort_unless($this->playersBelongToTeam((int) $validated['team_id'], $validated['players']), 422, 'One or more players do not belong to the selected team.');
         }
 
         $model = $this->getModel();
@@ -125,6 +129,28 @@ abstract class BaseRotationController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    // parbauda vai visi players[].user_id, kas tika iesutiti, tiešām pieder pie norādītā teama
+    protected function playersBelongToTeam(int $teamId, array $players): bool
+    {
+        $team = Team::with('members')->find($teamId);
+
+        if (!$team) {
+            return false;
+        }
+
+        $rosterIds = $team->members->pluck('id')->all();
+
+        foreach ($players as $player) {
+            $userId = $player['user_id'] ?? null;
+
+            if ($userId !== null && !in_array((int) $userId, $rosterIds, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // parbauda vai useris ir sī teama coach, manager vai assistant_manager

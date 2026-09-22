@@ -221,15 +221,37 @@ attachDragHandlers(court);
         courtPositions[pos] = { top: parseFloat(top), left: parseFloat(left) };
     };
 
+    // builds the standard base rotation (pos4 RS, pos3 MB, pos2 OT / pos5 OT, pos6 L or MB, pos1 S)
+    // instead of just dropping roster players into slots in roster order — a libero can never
+    // legally stand front row, so it is only ever placed at pos6 (back row)
     function autoFillFromRoster(players) {
         courtSlots = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
-        const positions = Object.keys(zoneCenters);
 
-        // players with no assigned court position can't be auto-placed —
-        // they stay on the bench until a position is set on the team roster
-        players.filter(p => p.position).slice(0, 6).forEach((player, index) => {
-            courtSlots[positions[index]] = { id: player.id, name: player.name, position: player.position };
+        const byRole = { S: [], OT: [], MB: [], RS: [], L: [] };
+        players.forEach(player => {
+            if (player.position && byRole[player.position]) {
+                byRole[player.position].push(player);
+            }
         });
+
+        const setter = byRole.S[0] || null;
+        const opposite = byRole.RS[0] || null;
+        const outsides = byRole.OT.slice(0, 2);
+        const middles = byRole.MB.slice(0, 2);
+        const libero = byRole.L[0] || null;
+
+        const place = (pos, player) => {
+            if (player) {
+                courtSlots[pos] = { id: player.id, name: player.name, position: player.position };
+            }
+        };
+
+        place('1', setter);
+        place('4', opposite);
+        place('3', middles[0]);
+        place('6', libero || middles[1]);
+        place('2', outsides[0]);
+        place('5', outsides[1]);
     }
 
     function selectTeam(teamId, seedPlayers) {

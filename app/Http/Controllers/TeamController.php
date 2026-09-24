@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Team;
+use App\Models\TeamAnnouncement;
 use App\Models\TeamMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,9 +97,19 @@ class TeamController extends Controller
 
     public function index(Request $request): View
     {
-        $teams = $request->user()->teams()->with(['coach', 'members', 'messages.user'])->latest()->get();
+        $teams = $request->user()->teams()->with(['coach', 'members'])->latest()->get();
 
         return view('teams.index', compact('teams'));
+    }
+
+    public function show(Request $request, Team $team): View
+    {
+        $isMember = $team->members()->whereKey($request->user()->id)->exists();
+        abort_unless($isMember || $request->user()->id === $team->coach_id, 403);
+
+        $team->load(['coach', 'members', 'messages.user', 'announcements.user']);
+
+        return view('teams.show', compact('team'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -180,5 +191,43 @@ class TeamController extends Controller
         ]);
 
         return back()->with('success', 'Message sent.');
+    }
+
+    public function storeAnnouncement(Request $request, Team $team): RedirectResponse
+    {
+        abort_unless($this->canManageAnnouncements($request, $team), 403);
+
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:2000'],
+        ]);
+
+        TeamAnnouncement::create([
+            'team_id' => $team->id,
+            'user_id' => $request->user()->id,
+            'message' => trim($validated['message']),
+        ]);
+
+        return back()->with('success', 'Announcement posted.');
+    }
+
+    public function destroyAnnouncement(Request $request, Team $team, TeamAnnouncement $announcement): RedirectResponse
+    {
+        abort_unless($announcement->team_id === $team->id, 404);
+        abort_unless($this->canManageAnnouncements($request, $team), 403);
+
+        $announcement->delete();
+
+        return back()->with('success', 'Announcement removed.');
+    }
+
+    private function canManageAnnouncements(Request $request, Team $team): bool
+    {
+        if ($request->user()->id === $team->coach_id) {
+            return true;
+        }
+
+        $role = $team->members()->whereKey($request->user()->id)->value('team_user.role');
+
+        return $role === 'manager';
     }
 }

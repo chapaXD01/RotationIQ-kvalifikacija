@@ -23,10 +23,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
     Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
     Route::post('/teams/join', [TeamController::class, 'join'])->name('teams.join');
+    Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
     Route::post('/teams/{team}/members/{user}/role', [TeamController::class, 'updateRole'])->name('teams.members.role');
     Route::post('/teams/{team}/members/{user}/position', [TeamController::class, 'updatePosition'])->name('teams.members.position');
     Route::post('/teams/{team}/members/{user}/attendance', [TeamController::class, 'updateAttendance'])->name('teams.members.attendance');
     Route::post('/teams/{team}/messages', [TeamController::class, 'storeMessage'])->name('teams.messages.store');
+    Route::post('/teams/{team}/announcements', [TeamController::class, 'storeAnnouncement'])->name('teams.announcements.store');
+    Route::delete('/teams/{team}/announcements/{announcement}', [TeamController::class, 'destroyAnnouncement'])->name('teams.announcements.destroy');
     Route::delete('/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
 });

@@ -32,6 +32,11 @@ class Team extends Model
         return $this->hasMany(TeamMessage::class)->oldest()->oldest('id');
     }
 
+    public function announcements()
+    {
+        return $this->hasMany(TeamAnnouncement::class)->latest()->latest('id');
+    }
+
     public function manager()
     {
         return $this->members()->where(function ($query) {

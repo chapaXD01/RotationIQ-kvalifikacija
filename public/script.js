@@ -497,6 +497,11 @@ const zoneCenters = {
 // volleyball rotation 
 function rotateClockwise() {
 
+    if (document.querySelectorAll('.player').length < 6) {
+        alert("Fill all 6 court positions before rotating.");
+        return;
+    }
+
     const rotationMap = {
         1: 6,
         6: 5,

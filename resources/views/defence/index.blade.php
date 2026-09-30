@@ -36,7 +36,7 @@
             @endif
 
             <p class="text-xs font-semibold uppercase tracking-widest text-green-400/70 mb-4 px-1">
-                🛡️ Your Saved Rotations
+                🛡️ Rotations
             </p>
 
             <div class="rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-white/5 backdrop-blur-md">
@@ -44,12 +44,29 @@
                     @if ($rotations->count())
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach ($rotations as $rotation)
+                                @php $isOwner = $rotation->user_id === auth()->id(); @endphp
                                 <div class="group flex flex-col gap-4 p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition">
 
                                     <div class="flex items-start justify-between gap-2">
                                         <div>
-                                            <span class="inline-block text-xs font-semibold uppercase tracking-widest text-green-400/60 mb-1">Rotation</span>
+                                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-green-400/60 mb-1">
+                                                Rotation
+                                                @if ($rotation->type === 'sequence')
+                                                    <span class="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-200 border border-green-400/40">Sequence</span>
+                                                @endif
+                                                @if (!$isOwner)
+                                                    <span class="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">View only</span>
+                                                @endif
+                                            </span>
                                             <h3 class="font-bold text-white text-base leading-snug">{{ $rotation->name }}</h3>
+                                            @if (!$isOwner)
+                                                <p class="mt-0.5 text-[11px] text-slate-400">
+                                                    By {{ $rotation->user->name ?? 'Unknown' }}
+                                                    @if ($rotation->team)
+                                                        &middot; {{ $rotation->team->name }}
+                                                    @endif
+                                                </p>
+                                            @endif
                                         </div>
                                         <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex-shrink-0">
                                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,33 +88,35 @@
                                             </svg>
                                             {{ __('View') }}
                                         </a>
-                                        <a
-                                            href="{{ route('defence.edit', $rotation->id) }}"
-                                            class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30 transition"
-                                        >
-                                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                            {{ __('Edit') }}
-                                        </a>
-                                        <form
-                                            action="{{ route('defence.destroy', $rotation->id) }}"
-                                            method="POST"
-                                            class="flex-1"
-                                            onsubmit="return confirm('Delete this rotation?')"
-                                        >
-                                            @csrf
-                                            @method('DELETE')
-                                            <button
-                                                type="submit"
-                                                class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 transition"
+                                        @if ($isOwner)
+                                            <a
+                                                href="{{ route('defence.edit', $rotation->id) }}"
+                                                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30 transition"
                                             >
-                                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
-                                                {{ __('Delete') }}
-                                            </button>
-                                        </form>
+                                                {{ __('Edit') }}
+                                            </a>
+                                            <form
+                                                action="{{ route('defence.destroy', $rotation->id) }}"
+                                                method="POST"
+                                                class="flex-1"
+                                                onsubmit="return confirm('Delete this rotation?')"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button
+                                                    type="submit"
+                                                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 transition"
+                                                >
+                                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    {{ __('Delete') }}
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach

@@ -67,8 +67,8 @@
                         </div>
                         @php $players = json_decode($movement->players, true); @endphp
                         @foreach ($players as $player)
-                            <div class="player" style="top: {{ $player['top'] }}px; left: {{ $player['left'] }}px">
-                                {{ $player['role'] }}
+                            <div class="player" style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">
+                                {{ $player['role'] ?? '?' }}
                             </div>
                         @endforeach
                     </div>

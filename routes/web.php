@@ -12,7 +12,9 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $teams = auth()->user()->teams()->with(['coach', 'members'])->latest()->get();
+
+    return view('dashboard', compact('teams'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {

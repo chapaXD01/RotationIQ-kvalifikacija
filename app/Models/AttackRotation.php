@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttackRotation extends Model
 {
-    protected $fillable = ['name', 'players', 'user_id', 'team_id'];
+    protected $fillable = ['name', 'players', 'user_id', 'team_id', 'type'];
 
     public function user(): BelongsTo
     {

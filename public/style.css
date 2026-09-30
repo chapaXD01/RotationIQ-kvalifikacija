@@ -137,3 +137,105 @@
     text-decoration: none;
     color: black;
 }
+
+/* full rotation sequence - mini court cards */
+.mini-court {
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    background: #e0b26b;
+    border: 4px solid white;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.mini-zone {
+    border: 1px dashed rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.mini-player {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #e63946;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mini-player.is-serving {
+    box-shadow: 0 0 0 3px #fbbf24;
+}
+
+.serve-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    color: #7c2d12;
+    background: #fbbf24;
+    padding: 1px 5px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* manually-authored sequence slots — an exact scaled-down replica of the real #court,
+   positioning each player at its real saved top/left (not a generic grid summary), so a
+   drag-only edit is actually visible here instead of looking unchanged */
+.mini-court-wrap {
+    width: 230px;
+    height: 184px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 3px solid white;
+    margin: 0 auto;
+}
+
+.mini-court-inner {
+    width: 500px;
+    height: 400px;
+    background: #e0b26b;
+    position: relative;
+    transform: scale(0.46);
+    transform-origin: top left;
+}
+
+.mini-court-inner .mini-zone-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.mini-court-inner .mini-zone-cell {
+    border: 2px dashed rgba(255, 255, 255, 0.6);
+}
+
+.mini-court-inner .mini-player-abs {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #e63946;
+    color: white;
+    font-weight: bold;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mini-court-inner .mini-player-abs.is-serving {
+    box-shadow: 0 0 0 4px #fbbf24;
+}

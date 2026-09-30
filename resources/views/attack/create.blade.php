@@ -24,9 +24,21 @@
 
                 {{-- Court panel --}}
                 <div class="lg:col-span-2 rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-white/5 backdrop-blur-md">
-                    <div class="px-5 py-4 border-b border-white/10 flex items-center gap-2">
+                    <div class="px-5 py-4 border-b border-white/10 flex items-center gap-2 flex-wrap">
                         <span class="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block"></span>
                         <span class="text-sm font-semibold text-white tracking-wide">Court View</span>
+                        @if(count($teams))
+                            <div id="sequenceTabs" class="hidden items-center gap-1.5 ml-3">
+                                @for ($i = 1; $i <= 6; $i++)
+                                    <button
+                                        type="button"
+                                        data-slot="{{ $i }}"
+                                        onclick="onSequenceTabClick({{ $i }})"
+                                        class="sequence-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-white/70 bg-white/5 border border-white/10 hover:bg-white/10 transition"
+                                    >{{ $i }}</button>
+                                @endfor
+                            </div>
+                        @endif
                         <span class="ml-auto text-xs text-white">Drag players to position</span>
                     </div>
                     <div class="p-6 flex justify-center items-center min-h-[440px]">
@@ -94,6 +106,24 @@
                                 <option value="defence" style="background:#1e293b;">Defence Rotation</option>
                             </select>
                         </div>
+
+                        @if(count($teams))
+                            {{-- Rotation Mode --}}
+                            <div>
+                                <label for="rotationMode" class="block text-xs font-semibold uppercase tracking-widest text-blue-300/80 mb-2">
+                                    {{ __('Rotation Mode') }}
+                                </label>
+                                <select
+                                    id="rotationMode"
+                                    onchange="onRotationModeChange()"
+                                    class="w-full px-4 py-2.5 rounded-xl text-white text-sm bg-slate-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/60 transition"
+                                >
+                                    <option value="single" style="background:#1e293b;">Single rotation</option>
+                                    <option value="sequence" style="background:#1e293b;">Full sequence (6 rotations)</option>
+                                </select>
+                                <p class="mt-1.5 text-[11px] text-white/40">Sequence mode lets you manually set up and edit all 6 rotations of a lineup, one at a time.</p>
+                            </div>
+                        @endif
 
                         {{-- Divider --}}
                         <div class="border-t border-white/10"></div>

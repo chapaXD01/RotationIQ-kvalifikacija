@@ -84,6 +84,11 @@ attachDragHandlers(court);
     let courtPositions = {};
     let selectedBenchPlayerId = null;
 
+    // "full sequence" authoring mode — 6 independently editable court layouts for one rotation
+    let sequenceMode = false;
+    let sequenceStates = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+    let activeSlot = 1;
+
     Object.keys(zoneCenters).forEach(pos => {
         courtPositions[pos] = { ...zoneCenters[pos] };
     });
@@ -227,6 +232,13 @@ attachDragHandlers(court);
     function autoFillFromRoster(players) {
         courtSlots = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
 
+        // reset drag positions to the default zone layout — otherwise a drag made while
+        // editing a different sequence slot (or a previous team selection) would "leak" into
+        // this fresh auto-filled slot at whichever zone was last dragged
+        Object.keys(zoneCenters).forEach(pos => {
+            courtPositions[pos] = { ...zoneCenters[pos] };
+        });
+
         const byRole = { S: [], OT: [], MB: [], RS: [], L: [] };
         players.forEach(player => {
             if (player.position && byRole[player.position]) {
@@ -259,6 +271,15 @@ attachDragHandlers(court);
         selectedBenchPlayerId = null;
         courtSlots = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
 
+        // courtPositions persists drag positions across calls (needed so re-rendering the
+        // same slot keeps a drag), but that means a drag made on one sequence slot would
+        // otherwise "leak" into every other slot that doesn't set its own top/left (a fresh
+        // autoFillFromRoster slot, for example) — reset to the default zone layout first so
+        // each slot only reflects positions its own data explicitly provides
+        Object.keys(zoneCenters).forEach(pos => {
+            courtPositions[pos] = { ...zoneCenters[pos] };
+        });
+
         if (selectedTeam && seedPlayers && seedPlayers.length) {
             seedPlayers.forEach(sp => {
                 if (!sp.pos || !sp.user_id) return;
@@ -282,9 +303,81 @@ attachDragHandlers(court);
 
     teamSelect.addEventListener('change', () => selectTeam(teamSelect.value));
 
+    // captures whatever is currently on the court into the active slot. Reads the live DOM
+    // (via captureCourtPlayers, the same function single-mode save uses) rather than the
+    // courtSlots/courtPositions state objects — those only track bench substitutions and
+    // drags, but rotateClockwise()/handleLiberoSub() mutate the .player elements directly
+    // and never touch courtSlots, so reading courtSlots here would silently drop any
+    // "Rotate Clockwise" changes made while editing a slot
+    function captureActiveSlotIntoState() {
+        sequenceStates[activeSlot] = captureCourtPlayers();
+    }
+
+    window.setSequenceMode = function (enabled) {
+        sequenceMode = enabled;
+
+        if (enabled) {
+            activeSlot = 1;
+            sequenceStates = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
+
+            if (selectedTeam) {
+                autoFillFromRoster(selectedTeam.players);
+                renderCourt();
+                renderBench();
+            }
+        }
+    };
+
+    window.isSequenceMode = function () {
+        return sequenceMode;
+    };
+
+    window.selectSequenceSlot = function (slot) {
+        if (!selectedTeam) return;
+
+        captureActiveSlotIntoState();
+        activeSlot = slot;
+
+        const seed = sequenceStates[slot];
+
+        if (seed && seed.length) {
+            selectTeam(selectedTeam.id, seed);
+        } else {
+            autoFillFromRoster(selectedTeam.players);
+            renderCourt();
+            renderBench();
+        }
+    };
+
+    window.getSequencePayload = function () {
+        captureActiveSlotIntoState();
+
+        return [1, 2, 3, 4, 5, 6].map(n => sequenceStates[n] || []);
+    };
+
+    // pre-loads a saved sequence-type rotation's 6 states so the edit page opens on slot 1
+    // and setSequenceMode/selectSequenceSlot above work with real data right away
+    function loadSequenceFromCurrent(teamId, slotsPlayers) {
+        selectedTeam = findTeam(teamId);
+        sequenceMode = true;
+        activeSlot = 1;
+
+        for (let i = 1; i <= 6; i++) {
+            sequenceStates[i] = slotsPlayers[i - 1] || [];
+        }
+
+        selectTeam(teamId, sequenceStates[1]);
+        window.__initialSequenceMode = true;
+    }
+
     if (current && current.team_id && findTeam(current.team_id)) {
         teamSelect.value = current.team_id;
-        selectTeam(current.team_id, current.players);
+
+        if (current.type === 'sequence' && Array.isArray(current.players)) {
+            loadSequenceFromCurrent(current.team_id, current.players);
+        } else {
+            selectTeam(current.team_id, current.players);
+        }
     } else if (teams.length === 1) {
         teamSelect.value = teams[0].id;
         selectTeam(teams[0].id);
@@ -292,6 +385,46 @@ attachDragHandlers(court);
         renderBench();
     }
 })();
+
+// Rotation Mode (single vs full sequence) — wired to the #rotationMode select + #sequenceTabs
+// tab strip that create/edit blade templates render when the user has a manageable team.
+function onRotationModeChange() {
+    const modeEl = document.getElementById('rotationMode');
+    const tabs = document.getElementById('sequenceTabs');
+    const teamSelect = document.getElementById('teamSelect');
+
+    if (!modeEl || !tabs) return;
+
+    if (modeEl.value === 'sequence') {
+        if (!window.setSequenceMode || !teamSelect || !teamSelect.value) {
+            alert('Select a team first to build a full sequence.');
+            modeEl.value = 'single';
+            return;
+        }
+
+        window.setSequenceMode(true);
+        tabs.classList.remove('hidden');
+        tabs.classList.add('flex');
+        onSequenceTabClick(1);
+    } else {
+        if (window.setSequenceMode) window.setSequenceMode(false);
+        tabs.classList.add('hidden');
+        tabs.classList.remove('flex');
+    }
+}
+
+function onSequenceTabClick(n) {
+    if (window.selectSequenceSlot) window.selectSequenceSlot(n);
+
+    document.querySelectorAll('.sequence-tab').forEach(btn => {
+        const active = parseInt(btn.dataset.slot) === n;
+        btn.classList.toggle('bg-blue-600', active);
+        btn.classList.toggle('border-blue-400', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('bg-white/5', !active);
+        btn.classList.toggle('text-white/70', !active);
+    });
+}
 
 function getPlayers() {
     const data = {};
@@ -409,6 +542,26 @@ function getCenter(player) {
 
 // save rotation
 
+// reads the currently rendered court into the same flat player-array shape the
+// backend expects for a "single" rotation (also reused as the base of each
+// "sequence" slot's capture — see window.getSequencePayload in the team-roster IIFE)
+function captureCourtPlayers() {
+    const players = [];
+
+    document.querySelectorAll('.player').forEach(player => {
+        players.push({
+            role: player.dataset.role,
+            pos: player.dataset.pos,
+            top: parseFloat(player.style.top),
+            left: parseFloat(player.style.left),
+            user_id: player.dataset.userId || null,
+            name: player.dataset.name || null
+        });
+    });
+
+    return players;
+}
+
 function saveRotation() {
 
     const name = document.getElementById('rotation-name').value;
@@ -419,20 +572,22 @@ function saveRotation() {
         return;
     }
 
-    const players = [];
+    const modeEl = document.getElementById('rotationMode');
+    const isSequence = !!(modeEl && modeEl.value === 'sequence' && window.isSequenceMode && window.isSequenceMode());
 
-    document.querySelectorAll('.player').forEach(player => {
+    let players;
 
-        players.push({
-            role: player.dataset.role,
-            pos: player.dataset.pos,
-            top: parseFloat(player.style.top),
-            left: parseFloat(player.style.left),
-            user_id: player.dataset.userId || null,
-            name: player.dataset.name || null
-        });
+    if (isSequence) {
+        players = window.getSequencePayload();
 
-    });
+        const filledSlots = players.filter(slot => slot.length > 0).length;
+        if (filledSlots < 6) {
+            alert('Fill all 6 rotations before saving the sequence (currently ' + filledSlots + '/6).');
+            return;
+        }
+    } else {
+        players = captureCourtPlayers();
+    }
 
     const teamSelectEl = document.getElementById('teamSelect');
     const teamId = (teamSelectEl && teamSelectEl.value) ? teamSelectEl.value : null;
@@ -455,7 +610,8 @@ function saveRotation() {
         body: JSON.stringify({
             name: name,
             players: players,
-            team_id: teamId
+            team_id: teamId,
+            type: isSequence ? 'sequence' : 'single'
         })
 
     })
@@ -531,17 +687,17 @@ function rotateClockwise() {
 // Libero swithc
 function handleLiberoSub() {
     const players = document.querySelectorAll('.player');
-    
+
     players.forEach(player => {
         const pos = parseInt(player.dataset.pos);
         const role = player.dataset.role;
-        
+
         // parbauda vai role ir vienāds ar MB(midle blocker), un ja speletāja position ir vienāds ar 5 positon vai 6 vai 1, ja ta ir tad izmaina pre L(libero)
         if (role === 'MB' && (pos === 5 || pos === 6 || pos === 1)) {
             player.dataset.role = 'L';
             player.textContent = 'L';
-        } 
- 
+        }
+
         else if (role === 'L' && (pos === 4 || pos === 3 || pos === 2)) {
             player.dataset.role = 'MB';
             player.textContent = 'MB';
@@ -554,18 +710,22 @@ function updateRotation(id) {
     const name = document.getElementById('rotation-name').value;
     const type = document.getElementById('rotationType').value;
 
-    const players = [];
+    const modeEl = document.getElementById('rotationMode');
+    const isSequence = !!(modeEl && modeEl.value === 'sequence' && window.isSequenceMode && window.isSequenceMode());
 
-    document.querySelectorAll('.player').forEach(player => {
-        players.push({
-            role: player.dataset.role,
-            pos: player.dataset.pos,
-            top: parseFloat(player.style.top),
-            left: parseFloat(player.style.left),
-            user_id: player.dataset.userId || null,
-            name: player.dataset.name || null
-        });
-    });
+    let players;
+
+    if (isSequence) {
+        players = window.getSequencePayload();
+
+        const filledSlots = players.filter(slot => slot.length > 0).length;
+        if (filledSlots < 6) {
+            alert('Fill all 6 rotations before saving the sequence (currently ' + filledSlots + '/6).');
+            return;
+        }
+    } else {
+        players = captureCourtPlayers();
+    }
 
     const teamSelectEl = document.getElementById('teamSelect');
     const teamId = (teamSelectEl && teamSelectEl.value) ? teamSelectEl.value : null;
@@ -583,7 +743,8 @@ function updateRotation(id) {
         body: JSON.stringify({
             name: name,
             players: players,
-            team_id: teamId
+            team_id: teamId,
+            type: isSequence ? 'sequence' : 'single'
         })
     })
     .then(res => res.json())
@@ -790,3 +951,18 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationCount.textContent = '0 / ' + players.length;
     });
 });
+
+// on the edit page, a saved "sequence" rotation pre-loads its 6 states (see
+// loadSequenceFromCurrent above) and flags window.__initialSequenceMode — sync the
+// Rotation Mode dropdown + tab strip to match once everything has rendered
+if (window.__initialSequenceMode) {
+    const modeEl = document.getElementById('rotationMode');
+    const tabs = document.getElementById('sequenceTabs');
+
+    if (modeEl) modeEl.value = 'sequence';
+    if (tabs) {
+        tabs.classList.remove('hidden');
+        tabs.classList.add('flex');
+    }
+    if (typeof onSequenceTabClick === 'function') onSequenceTabClick(1);
+}

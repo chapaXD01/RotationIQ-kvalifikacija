@@ -23,15 +23,19 @@
                     radial-gradient(ellipse 35% 35% at 50% 50%, rgba(99, 102, 241, 0.07) 0%, transparent 50%),
                     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             }
+
+            @keyframes brand-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            .brand-ball { animation: brand-spin 7s linear infinite; transform-origin: 50% 50%; }
+            .brand-ball-link:hover .brand-ball { animation-duration: 1.1s; }
         </style>
     </head>
     <body class="guest-bg font-sans antialiased" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px;">
 
         <!-- Logo -->
         <div class="mb-8 text-center">
-            <a href="/" class="inline-flex flex-col items-center gap-3">
-                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl" style="background: rgba(37,99,235,0.2); border: 1px solid rgba(96,165,250,0.3); box-shadow: 0 0 40px rgba(37,99,235,0.15);">
-                    🏐
+            <a href="/" class="brand-ball-link inline-flex flex-col items-center gap-3">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: rgba(37,99,235,0.2); border: 1px solid rgba(96,165,250,0.3); box-shadow: 0 0 40px rgba(37,99,235,0.15);">
+                    <x-volleyball-logo class="w-9 h-9" />
                 </div>
                 <div>
                     <p class="font-bold text-2xl text-white tracking-tight">RotationIQ</p>

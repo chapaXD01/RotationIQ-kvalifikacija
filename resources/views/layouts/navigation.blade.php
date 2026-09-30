@@ -5,9 +5,9 @@
             <!-- Left: Logo + Nav links -->
             <div class="flex items-center gap-8">
                 <!-- Logo -->
-                <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 shrink-0">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg" style="background: rgba(37,99,235,0.25); border: 1px solid rgba(96,165,250,0.3);">
-                        🏐
+                <a href="{{ route('dashboard') }}" class="brand-ball-link flex items-center gap-2.5 shrink-0">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(37,99,235,0.25); border: 1px solid rgba(96,165,250,0.3);">
+                        <x-volleyball-logo class="w-5 h-5" />
                     </div>
                     <span class="font-bold text-base text-white tracking-tight">RotationIQ</span>
                 </a>

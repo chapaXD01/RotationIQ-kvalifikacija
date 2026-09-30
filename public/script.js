@@ -223,7 +223,7 @@ attachDragHandlers(court);
 
             if (occupant) {
                 const el = document.createElement('div');
-                el.className = 'player';
+                el.className = 'player' + (String(pos) === '1' ? ' is-serving' : '');
                 el.dataset.pos = pos;
                 el.dataset.role = occupant.position || '';
                 el.dataset.userId = occupant.id;
@@ -1059,5 +1059,9 @@ if (window.__initialSequenceMode) {
         tabs.classList.remove('hidden');
         tabs.classList.add('flex');
     }
-    if (typeof onSequenceTabClick === 'function') onSequenceTabClick(1);
+
+    // opened via a "click a rotation card to edit it" link from the show page
+    // (?slot=N) — jump straight to that slot instead of always slot 1
+    const initialSlot = window.ROTATION_INITIAL_SLOT || 1;
+    if (typeof onSequenceTabClick === 'function') onSequenceTabClick(initialSlot);
 }

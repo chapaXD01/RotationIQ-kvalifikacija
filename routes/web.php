@@ -5,6 +5,9 @@ use App\Http\Controllers\DefenceController;
 use App\Http\Controllers\AttackController;
 use App\Http\Controllers\MovingPlayerController;
 use App\Http\Controllers\TeamController;
+use App\Models\AttackRotation;
+use App\Models\DefenceRotation;
+use App\Models\TeamAnnouncement;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -12,9 +15,32 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    $userId = auth()->id();
     $teams = auth()->user()->teams()->with(['coach', 'members'])->latest()->get();
 
-    return view('dashboard', compact('teams'));
+    $stats = [
+        'teams' => $teams->count(),
+        'attack' => AttackRotation::where('user_id', $userId)->count(),
+        'defence' => DefenceRotation::where('user_id', $userId)->count(),
+    ];
+
+    $recentRotations = AttackRotation::where('user_id', $userId)->latest()->limit(5)->get()
+        ->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'type' => $r->type, 'kind' => 'attack', 'created_at' => $r->created_at])
+        ->concat(
+            DefenceRotation::where('user_id', $userId)->latest()->limit(5)->get()
+                ->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'type' => $r->type, 'kind' => 'defence', 'created_at' => $r->created_at])
+        )
+        ->sortByDesc('created_at')
+        ->take(5)
+        ->values();
+
+    $announcements = TeamAnnouncement::whereIn('team_id', $teams->pluck('id'))
+        ->with(['user:id,name', 'team:id,name'])
+        ->latest()
+        ->limit(4)
+        ->get();
+
+    return view('dashboard', compact('teams', 'stats', 'recentRotations', 'announcements'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {

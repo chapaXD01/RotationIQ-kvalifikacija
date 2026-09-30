@@ -22,7 +22,16 @@
                     radial-gradient(ellipse 60% 40% at 80% 80%, rgba(59, 130, 246, 0.12) 0%, transparent 55%),
                     radial-gradient(ellipse 40% 30% at 60% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
                     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                /* the radial blooms are positioned as % of the whole background area — without
+                   "fixed" they anchor to the full document height, so a taller page (like the
+                   dashboard once it has more sections) drags them down into view somewhere
+                   they were never meant to show. Anchoring to the viewport keeps them stable. */
+                background-attachment: fixed;
             }
+
+            @keyframes brand-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            .brand-ball { animation: brand-spin 7s linear infinite; transform-origin: 50% 50%; }
+            .brand-ball-link:hover .brand-ball { animation-duration: 1.1s; }
         </style>
     </head>
     <body class="app-bg font-sans antialiased" style="margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;">
@@ -52,7 +61,9 @@
 
                     <!-- Brand -->
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl">🏐</span>
+                        <span class="brand-ball-link" style="display: inline-flex; width: 28px; height: 28px;">
+                            <x-volleyball-logo class="w-7 h-7" />
+                        </span>
                         <div>
                             <p class="font-bold text-white text-sm">RotationIQ</p>
                             <p class="text-xs text-white">Volleyball rotation toolkit</p>

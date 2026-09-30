@@ -40,9 +40,9 @@
                 <div class="p-4 rounded-xl bg-red-500/10 border border-red-400/30 text-red-200 text-sm">{{ $errors->first() }}</div>
             @endif
 
-            <section class="p-6 rounded-2xl border border-amber-400/20 bg-amber-500/5 backdrop-blur-md">
+            <section class="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
                 <div class="mb-3 flex items-center justify-between gap-3">
-                    <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">Announcements</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Announcements</span>
                     <span class="text-[10px] text-slate-400">{{ $team->announcements->count() }}</span>
                 </div>
 
@@ -55,9 +55,9 @@
                             maxlength="2000"
                             required
                             placeholder="Post an announcement to the team..."
-                            class="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400"
+                            class="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-slate-400 focus:border-blue-400 focus:ring-blue-400"
                         ></textarea>
-                        <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 transition">
+                        <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition">
                             Post
                         </button>
                     </form>
@@ -65,7 +65,7 @@
 
                 <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
                     @forelse ($team->announcements as $announcement)
-                        <div class="rounded-xl border border-amber-400/10 bg-black/10 px-3 py-2.5" x-data="{ confirmDelete: false }">
+                        <div class="rounded-xl border border-white/10 bg-black/10 px-3 py-2.5" x-data="{ confirmDelete: false }">
                             <div class="mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-slate-400">
                                 <span>{{ $announcement->user->name }}</span>
                                 <span class="flex items-center gap-2">

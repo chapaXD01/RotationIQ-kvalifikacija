@@ -70,12 +70,26 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     @foreach ($slots as $index => $slotPlayers)
                         @php $rotationNumber = $index + 1; @endphp
-                        <div class="rounded-2xl overflow-hidden shadow-xl border {{ $rotationNumber === 1 ? 'border-blue-400/50' : 'border-white/10' }} bg-white/5 backdrop-blur-md">
+                        @if ($isOwner)
+                            <a href="{{ route('attack.edit', $rotation->id) }}?slot={{ $rotationNumber }}" class="group block rounded-2xl overflow-hidden shadow-xl border {{ $rotationNumber === 1 ? 'border-blue-400/50' : 'border-white/10' }} bg-white/5 backdrop-blur-md transition hover:border-blue-400/60 hover:bg-blue-500/10">
+                        @else
+                            <div class="rounded-2xl overflow-hidden shadow-xl border {{ $rotationNumber === 1 ? 'border-blue-400/50' : 'border-white/10' }} bg-white/5 backdrop-blur-md">
+                        @endif
                             <div class="px-4 py-3 border-b border-white/10 flex items-center justify-between">
                                 <span class="text-sm font-semibold text-white tracking-wide">Rotation {{ $rotationNumber }}</span>
-                                @if ($rotationNumber === 1)
-                                    <span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/40">Start</span>
-                                @endif
+                                <div class="flex items-center gap-2">
+                                    @if ($rotationNumber === 1)
+                                        <span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/40">Start</span>
+                                    @endif
+                                    @if ($isOwner)
+                                        <span class="text-[10px] font-semibold text-blue-300 opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                                            Edit
+                                            <svg class="w-3 h-3 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                             <div class="p-4 flex justify-center">
                                 <div class="mini-court-wrap">
@@ -102,7 +116,11 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        @if ($isOwner)
+                            </a>
+                        @else
+                            </div>
+                        @endif
                     @endforeach
                 </div>
 
@@ -150,7 +168,7 @@
                         @php $players = json_decode($rotation->players, true); @endphp
 
                         @foreach ($players as $player)
-                            <div class="player"
+                            <div class="player {{ (int) ($player['pos'] ?? 0) === 1 ? 'is-serving' : '' }}"
                                  data-role="{{ $player['role'] ?? '' }}"
                                  data-name="{{ $player['name'] ?? '' }}"
                                  style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">

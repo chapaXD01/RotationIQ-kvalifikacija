@@ -1,5 +1,75 @@
 const court = document.getElementById('court');
 
+const POSITION_LABELS = {
+    S: 'Setter',
+    MB: 'Middle blocker',
+    OT: 'Outside hitter',
+    OH: 'Outside hitter',
+    RS: 'Right side',
+    L: 'Libero'
+};
+
+// single floating tooltip reused for every .player/.mini-player-abs hover,
+// on every page (create/edit courts, saved-rotation show pages, sequence previews)
+let playerTooltipEl = null;
+
+function ensurePlayerTooltip() {
+    if (!playerTooltipEl) {
+        playerTooltipEl = document.createElement('div');
+        playerTooltipEl.className = 'player-tooltip';
+        document.body.appendChild(playerTooltipEl);
+    }
+    return playerTooltipEl;
+}
+
+function playerTooltipContent(el) {
+    const rawName = (el.dataset.name || '').trim();
+    const role = (el.dataset.role || '').trim();
+    const label = role ? (POSITION_LABELS[role] || role) : '';
+
+    if (rawName) {
+        return { title: rawName, sub: label };
+    }
+
+    return { title: label || el.textContent.trim() || 'Player', sub: '' };
+}
+
+function showPlayerTooltip(el) {
+    const { title, sub } = playerTooltipContent(el);
+    const tip = ensurePlayerTooltip();
+
+    tip.textContent = '';
+    tip.appendChild(document.createTextNode(title));
+
+    if (sub) {
+        const subEl = document.createElement('span');
+        subEl.className = 'tooltip-sub';
+        subEl.textContent = sub;
+        tip.appendChild(subEl);
+    }
+
+    const rect = el.getBoundingClientRect();
+    tip.style.left = (rect.left + rect.width / 2) + 'px';
+    tip.style.top = rect.top + 'px';
+    tip.classList.add('visible');
+}
+
+function hidePlayerTooltip() {
+    if (playerTooltipEl) playerTooltipEl.classList.remove('visible');
+}
+
+document.addEventListener('mouseover', e => {
+    const el = e.target.closest('.player, .mini-player-abs');
+    if (el) showPlayerTooltip(el);
+});
+
+document.addEventListener('mouseout', e => {
+    const el = e.target.closest('.player, .mini-player-abs');
+    if (el) hidePlayerTooltip();
+});
+
+document.addEventListener('scroll', hidePlayerTooltip, true);
+
 // attaches drag-to-reposition to every .player inside the court, and tells
 // the roster/bench logic (if active) about plain clicks vs. drags
 function attachDragHandlers(courtEl) {
@@ -16,6 +86,19 @@ function attachDragHandlers(courtEl) {
             offsetX = e.offsetX;
             offsetY = e.offsetY;
             let moved = false;
+            let rafId = null;
+            let pendingX = null;
+            let pendingY = null;
+            hidePlayerTooltip();
+            // drop the CSS snap-transition while actively dragging — otherwise every
+            // mousemove update gets animated instead of tracking the cursor instantly
+            player.classList.add('dragging');
+
+            function applyPending() {
+                rafId = null;
+                player.style.left = pendingX + 'px';
+                player.style.top = pendingY + 'px';
+            }
 
             function move(e) {
                 moved = true;
@@ -28,14 +111,27 @@ function attachDragHandlers(courtEl) {
                 x = Math.max(0, Math.min(x, courtEl.clientWidth - player.clientWidth));
                 y = Math.max(0, Math.min(y, courtEl.clientHeight - player.clientHeight));
 
-                player.style.left = x + 'px';
-                player.style.top = y + 'px';
+                pendingX = x;
+                pendingY = y;
+
+                // batch style writes to one per animation frame instead of one per
+                // mousemove event, which avoids layout thrashing on fast mouse movement
+                if (rafId === null) {
+                    rafId = requestAnimationFrame(applyPending);
+                }
             }
 
             document.addEventListener('mousemove', move);
 
             document.addEventListener('mouseup', () => {
                 document.removeEventListener('mousemove', move);
+
+                if (rafId !== null) {
+                    cancelAnimationFrame(rafId);
+                    applyPending();
+                }
+
+                player.classList.remove('dragging');
 
                 if (moved) {
                     if (window.rememberCourtPosition) {
@@ -135,7 +231,6 @@ attachDragHandlers(court);
                 el.style.top = coords.top + 'px';
                 el.style.left = coords.left + 'px';
                 el.textContent = playerLabel(occupant.position, occupant.name);
-                el.title = tooltipFor(occupant.name, occupant.position);
                 court.appendChild(el);
             } else {
                 const el = document.createElement('div');

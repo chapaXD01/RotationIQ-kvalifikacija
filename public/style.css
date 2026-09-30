@@ -26,6 +26,56 @@
     transition: top 0.3s ease, left 0.3s ease;
 }
 
+.player.dragging {
+    transition: none;
+    cursor: grabbing;
+}
+
+.player-tooltip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 14px));
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.player-tooltip.visible {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 10px));
+}
+
+.player-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #0f172a;
+}
+
+.player-tooltip .tooltip-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 .zones {
     position: absolute;
     inset: 0;

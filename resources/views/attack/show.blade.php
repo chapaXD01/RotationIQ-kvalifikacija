@@ -92,6 +92,8 @@
                                             @php $pos = (int) ($player['pos'] ?? 0); @endphp
                                             <div
                                                 class="mini-player-abs {{ $pos === 1 ? 'is-serving' : '' }}"
+                                                data-role="{{ $player['role'] ?? '' }}"
+                                                data-name="{{ $player['name'] ?? '' }}"
                                                 style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px;"
                                             >
                                                 {{ $player['role'] ?? '?' }}
@@ -149,6 +151,8 @@
 
                         @foreach ($players as $player)
                             <div class="player"
+                                 data-role="{{ $player['role'] ?? '' }}"
+                                 data-name="{{ $player['name'] ?? '' }}"
                                  style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">
                                 {{ $player['role'] ?? '?' }}
                             </div>

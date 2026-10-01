@@ -74,21 +74,7 @@ abstract class BaseRotationController extends Controller
     public function update(Request $request, $id)
     {
         $type = $request->input('type') === 'sequence' ? 'sequence' : 'single';
-
-        $rules = [
-            'name'    => 'required|string|max:255',
-            'type'    => 'nullable|in:single,sequence',
-            'team_id' => 'nullable|integer|exists:teams,id',
-        ];
-
-        if ($type === 'sequence') {
-            $rules['players']             = 'required|array|size:6';
-            $rules['players.*']           = 'array|min:1';
-            $rules['players.*.*.user_id'] = 'nullable|integer';
-        } else {
-            $rules['players']             = 'required|array|min:1';
-            $rules['players.*.user_id']   = 'nullable|integer';
-        }
+        $rules = $this->playerValidationRules($type);
 
         // NB: $request->validate() only returns fields that have a validation rule. Because
         // "players.*.user_id" (or "players.*.*.user_id" for sequences) only declares a rule
@@ -123,21 +109,7 @@ abstract class BaseRotationController extends Controller
     public function store(Request $request)
     {
         $type = $request->input('type') === 'sequence' ? 'sequence' : 'single';
-
-        $rules = [
-            'name'    => 'required|string|max:255',
-            'type'    => 'nullable|in:single,sequence',
-            'team_id' => 'nullable|integer|exists:teams,id',
-        ];
-
-        if ($type === 'sequence') {
-            $rules['players']             = 'required|array|size:6';
-            $rules['players.*']           = 'array|min:1';
-            $rules['players.*.*.user_id'] = 'nullable|integer';
-        } else {
-            $rules['players']             = 'required|array|min:1';
-            $rules['players.*.user_id']   = 'nullable|integer';
-        }
+        $rules = $this->playerValidationRules($type);
 
         // see the NB in update() above — validate() only enforces the rules here, the
         // actual players payload is read from the raw request so role/pos/top/left/name
@@ -184,6 +156,37 @@ abstract class BaseRotationController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    // validacijas rules priekš store()/update() — "single" tipam players ir flat masīvs,
+    // "sequence" tipam tas ir 6 apakšmasīvi (viens katrai rotacijai). role/pos/top/left agrāk
+    // netika parbaudīti vispār (tikai user_id) — klients varēja saglabāt nepilnīgus/nejaušus
+    // spēlētāju objektus, kas izraisīja "Undefined array key" kļūdas skatu lapās
+    protected function playerValidationRules(string $type): array
+    {
+        $rules = [
+            'name'    => 'required|string|max:255',
+            'type'    => 'nullable|in:single,sequence',
+            'team_id' => 'nullable|integer|exists:teams,id',
+        ];
+
+        $prefix = $type === 'sequence' ? 'players.*.*.' : 'players.*.';
+
+        if ($type === 'sequence') {
+            $rules['players']   = 'required|array|size:6';
+            $rules['players.*'] = 'array|min:1';
+        } else {
+            $rules['players'] = 'required|array|min:1';
+        }
+
+        $rules[$prefix . 'user_id'] = 'nullable|integer';
+        $rules[$prefix . 'role']    = 'required|string|in:S,MB,OT,RS,L';
+        $rules[$prefix . 'pos']     = 'required|in:1,2,3,4,5,6';
+        $rules[$prefix . 'top']     = 'required|numeric|between:0,400';
+        $rules[$prefix . 'left']    = 'required|numeric|between:0,500';
+        $rules[$prefix . 'name']    = 'nullable|string|max:255';
+
+        return $rules;
     }
 
     // "sequence" tipam players ir 6 apakšmasīvi (viens katrai rotacijai) — savieno tos vienā

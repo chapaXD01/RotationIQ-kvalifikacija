@@ -138,7 +138,6 @@
                             this.menuOpen = true;
                         }
                     }"
-                    @click.outside="menuOpen = false"
                     @keydown.escape.window="menuOpen = false"
                 @endif
             >
@@ -347,6 +346,7 @@
                         x-cloak
                         x-show="menuOpen"
                         x-transition
+                        @click.outside="menuOpen = false"
                         class="fixed z-50 w-64 rounded-xl border border-white/15 bg-slate-900 p-3 shadow-2xl shadow-black/40"
                         :style="`left: ${menuX}px; top: ${menuY}px`"
                     >

@@ -42,27 +42,29 @@
                     </div>
                     <div class="p-6 flex justify-center items-center min-h-[440px]">
                         <link rel="stylesheet" href="{{ asset('style.css') }}">
-                        <div id="court" style="margin: 0; padding: 0;">
-                            <div class="zones">
-                                <div class="zone">4</div>
-                                <div class="zone">3</div>
-                                <div class="zone">2</div>
-                                <div class="zone">5</div>
-                                <div class="zone">6</div>
-                                <div class="zone">1</div>
+                        <div class="court-wrap">
+                            <div id="court" style="margin: 0; padding: 0;">
+                                <div class="zones">
+                                    <div class="zone">4</div>
+                                    <div class="zone">3</div>
+                                    <div class="zone">2</div>
+                                    <div class="zone">5</div>
+                                    <div class="zone">6</div>
+                                    <div class="zone">1</div>
+                                </div>
+                                <svg id="lines" width="500" height="400"
+                                     style="position:absolute; top:0; left:0; pointer-events:none;"></svg>
+                                @if(count($teams))
+                                    {{-- Players are injected by script.js from the selected team's roster --}}
+                                @else
+                                    <div class="player" data-pos="4" data-role="RS" style="top:78px; left:61px;">RS</div>
+                                    <div class="player" data-pos="3" data-role="MB" style="top:78px; left:228px;">MB</div>
+                                    <div class="player" data-pos="2" data-role="OH" style="top:78px; left:395px;">OH</div>
+                                    <div class="player" data-pos="5" data-role="OH" style="top:278px; left:61px;">OH</div>
+                                    <div class="player" data-pos="6" data-role="L"  style="top:278px; left:228px;">L</div>
+                                    <div class="player" data-pos="1" data-role="S"  style="top:278px; left:395px;">S</div>
+                                @endif
                             </div>
-                            <svg id="lines" width="500" height="400"
-                                 style="position:absolute; top:0; left:0; pointer-events:none;"></svg>
-                            @if(count($teams))
-                                {{-- Players are injected by script.js from the selected team's roster --}}
-                            @else
-                                <div class="player" data-pos="4" data-role="RS" style="top:78px; left:61px;">RS</div>
-                                <div class="player" data-pos="3" data-role="MB" style="top:78px; left:228px;">MB</div>
-                                <div class="player" data-pos="2" data-role="OH" style="top:78px; left:395px;">OH</div>
-                                <div class="player" data-pos="5" data-role="OH" style="top:278px; left:61px;">OH</div>
-                                <div class="player" data-pos="6" data-role="L"  style="top:278px; left:228px;">L</div>
-                                <div class="player" data-pos="1" data-role="S"  style="top:278px; left:395px;">S</div>
-                            @endif
                         </div>
                     </div>
                 </div>

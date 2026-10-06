@@ -155,7 +155,7 @@
                     </span>
                 </div>
                 <div class="p-8 flex justify-center items-center min-h-[460px]">
-                    <div id="court" style="margin: 0; padding: 0;">
+                    <div id="court" class="court-view" style="margin: 0; padding: 0;">
                         <div class="zones">
                             <div class="zone">4</div>
                             <div class="zone">3</div>
@@ -168,10 +168,14 @@
                         @php $players = json_decode($rotation->players, true); @endphp
 
                         @foreach ($players as $player)
+                            @php
+                                $topPct = max(0, min(100, ((float) ($player['top'] ?? 0)) / 400 * 100));
+                                $leftPct = max(0, min(100, ((float) ($player['left'] ?? 0)) / 500 * 100));
+                            @endphp
                             <div class="player {{ (int) ($player['pos'] ?? 0) === 1 ? 'is-serving' : '' }}"
                                  data-role="{{ $player['role'] ?? '' }}"
                                  data-name="{{ $player['name'] ?? '' }}"
-                                 style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">
+                                 style="top: {{ $topPct }}%; left: {{ $leftPct }}%;">
                                 {{ $player['role'] ?? '?' }}
                             </div>
                         @endforeach

@@ -70,8 +70,29 @@ document.addEventListener('mouseout', e => {
 
 document.addEventListener('scroll', hidePlayerTooltip, true);
 
+// shrinks #court to fit its .court-wrap container (desktop: wrap is >=500px so this
+// is a no-op scale of 1; phone: wrap is narrower, so the whole court scales down).
+// Only runs on pages that actually wrap #court in .court-wrap (create/edit) — show
+// pages use a different, non-draggable .court-view technique and don't have this class.
+function updateCourtScale() {
+    if (!court) return;
+
+    const wrap = court.parentElement;
+    if (!wrap || !wrap.classList.contains('court-wrap')) return;
+
+    const scale = wrap.clientWidth / court.offsetWidth;
+    court.style.transform = `scale(${scale})`;
+}
+
+window.addEventListener('resize', updateCourtScale);
+updateCourtScale();
+
 // attaches drag-to-reposition to every .player inside the court, and tells
-// the roster/bench logic (if active) about plain clicks vs. drags
+// the roster/bench logic (if active) about plain clicks vs. drags. Uses Pointer Events
+// (not mouse events) so this works identically with a mouse, a finger on a phone, or a
+// pen — offsetX/offsetY are already reported in the player's own untransformed space by
+// the browser, but clientX/clientY are raw screen pixels, so those get divided by the
+// live court scale to land back in the court's 500x400 virtual coordinate space.
 function attachDragHandlers(courtEl) {
     if (!courtEl) return;
 
@@ -79,19 +100,19 @@ function attachDragHandlers(courtEl) {
         if (player.dataset.dragBound) return;
         player.dataset.dragBound = '1';
 
-        let offsetX = 0;
-        let offsetY = 0;
+        player.addEventListener('pointerdown', e => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-        player.addEventListener('mousedown', e => {
-            offsetX = e.offsetX;
-            offsetY = e.offsetY;
+            const offsetX = e.offsetX;
+            const offsetY = e.offsetY;
             let moved = false;
             let rafId = null;
             let pendingX = null;
             let pendingY = null;
             hidePlayerTooltip();
+            player.setPointerCapture(e.pointerId);
             // drop the CSS snap-transition while actively dragging — otherwise every
-            // mousemove update gets animated instead of tracking the cursor instantly
+            // move update gets animated instead of tracking the pointer instantly
             player.classList.add('dragging');
 
             function applyPending() {
@@ -103,10 +124,10 @@ function attachDragHandlers(courtEl) {
             function move(e) {
                 moved = true;
                 const rect = courtEl.getBoundingClientRect();
+                const scale = rect.width / courtEl.offsetWidth;
 
-                let x = e.clientX - rect.left - offsetX;
-                let y = e.clientY - rect.top - offsetY;
-
+                let x = (e.clientX - rect.left) / scale - offsetX;
+                let y = (e.clientY - rect.top) / scale - offsetY;
 
                 x = Math.max(0, Math.min(x, courtEl.clientWidth - player.clientWidth));
                 y = Math.max(0, Math.min(y, courtEl.clientHeight - player.clientHeight));
@@ -115,16 +136,16 @@ function attachDragHandlers(courtEl) {
                 pendingY = y;
 
                 // batch style writes to one per animation frame instead of one per
-                // mousemove event, which avoids layout thrashing on fast mouse movement
+                // move event, which avoids layout thrashing on fast pointer movement
                 if (rafId === null) {
                     rafId = requestAnimationFrame(applyPending);
                 }
             }
 
-            document.addEventListener('mousemove', move);
-
-            document.addEventListener('mouseup', () => {
-                document.removeEventListener('mousemove', move);
+            function up() {
+                player.removeEventListener('pointermove', move);
+                player.removeEventListener('pointerup', up);
+                player.removeEventListener('pointercancel', up);
 
                 if (rafId !== null) {
                     cancelAnimationFrame(rafId);
@@ -140,7 +161,11 @@ function attachDragHandlers(courtEl) {
                 } else if (window.handleCourtSlotClick) {
                     window.handleCourtSlotClick(player.dataset.pos);
                 }
-            }, { once: true });
+            }
+
+            player.addEventListener('pointermove', move);
+            player.addEventListener('pointerup', up, { once: true });
+            player.addEventListener('pointercancel', up, { once: true });
         });
     });
 }

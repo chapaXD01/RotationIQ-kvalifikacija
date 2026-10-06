@@ -47,31 +47,33 @@
                     </div>
                     <div class="p-6 flex justify-center items-center min-h-[440px]">
                         <link rel="stylesheet" href="{{ asset('style.css') }}">
-                        <div id="court" style="margin: 0; padding: 0;">
-                            <div class="zones">
-                                <div class="zone">4</div>
-                                <div class="zone">3</div>
-                                <div class="zone">2</div>
-                                <div class="zone">5</div>
-                                <div class="zone">6</div>
-                                <div class="zone">1</div>
-                            </div>
-                            <svg id="lines" width="500" height="400"
-                                 style="position:absolute; top:0; left:0; pointer-events:none;"></svg>
+                        <div class="court-wrap">
+                            <div id="court" style="margin: 0; padding: 0;">
+                                <div class="zones">
+                                    <div class="zone">4</div>
+                                    <div class="zone">3</div>
+                                    <div class="zone">2</div>
+                                    <div class="zone">5</div>
+                                    <div class="zone">6</div>
+                                    <div class="zone">1</div>
+                                </div>
+                                <svg id="lines" width="500" height="400"
+                                     style="position:absolute; top:0; left:0; pointer-events:none;"></svg>
 
-                            @if($rotation->team_id && count($teams))
-                                {{-- Players are injected by script.js from the rotation's team roster --}}
-                            @else
-                                @php $players = json_decode($rotation->players, true); @endphp
-                                @foreach ($players as $player)
-                                    <div class="player"
-                                         data-pos="{{ $player['pos'] ?? '' }}"
-                                         data-role="{{ $player['role'] ?? '' }}"
-                                         style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">
-                                        {{ $player['role'] ?? '?' }}
-                                    </div>
-                                @endforeach
-                            @endif
+                                @if($rotation->team_id && count($teams))
+                                    {{-- Players are injected by script.js from the rotation's team roster --}}
+                                @else
+                                    @php $players = json_decode($rotation->players, true); @endphp
+                                    @foreach ($players as $player)
+                                        <div class="player"
+                                             data-pos="{{ $player['pos'] ?? '' }}"
+                                             data-role="{{ $player['role'] ?? '' }}"
+                                             style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">
+                                            {{ $player['role'] ?? '?' }}
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>

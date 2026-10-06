@@ -10,6 +10,25 @@
     padding: 0;
 }
 
+/* interactive court on create/edit pages — #court itself stays a fixed 500x400px
+   authoring canvas (every position in script.js, saved rotations, zoneCenters etc. all
+   stay in that virtual space, unchanged), but on a narrow screen it would otherwise force
+   horizontal scrolling. .court-wrap scales it down to fit visually (same proven technique
+   as .mini-court-wrap/.mini-court-inner), with script.js computing the live scale factor
+   and keeping drag math correct at any size — see updateCourtScale()/attachDragHandlers. */
+.court-wrap {
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 5 / 4;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.court-wrap #court {
+    transform-origin: top left;
+}
+
 .player {
     width: 45px;
     height: 45px;
@@ -18,6 +37,7 @@
     border-radius: 50%;
     position: absolute;
     cursor: grab;
+    touch-action: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -29,6 +49,28 @@
 .player.dragging {
     transition: none;
     cursor: grabbing;
+}
+
+/* read-only court view (attack/defence/movingplayers "show" pages) — the authoring
+   canvas is a fixed 500x400px desktop layout, which either forces horizontal scrolling
+   or gets clipped on a phone so players render partly/fully off-screen. Here #court
+   scales fluidly to fit any viewport, and each player's top/left is expressed as a %
+   (not raw px) of that same 500x400 space, so every player lands in the exact same
+   relative spot at any size. Only applied via the .court-view class — the interactive
+   create/edit court stays a fixed 500x400px canvas, untouched.
+   (0.09 = 45/500, 0.1125 = 45/400 — with aspect-ratio locked at 5/4 these always
+   compute to the same actual pixel size, so players stay circular, not oval.) */
+#court.court-view {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    aspect-ratio: 5 / 4;
+}
+
+.court-view .player {
+    width: 9%;
+    height: 11.25%;
+    font-size: clamp(9px, 3.2vw, 14px);
 }
 
 .player-tooltip {

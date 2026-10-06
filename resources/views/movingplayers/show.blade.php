@@ -60,14 +60,18 @@
                 </div>
                 <div class="p-8 flex justify-center items-center min-h-[460px]">
                     <link rel="stylesheet" href="{{ asset('style.css') }}">
-                    <div id="court" style="margin: 0; padding: 0;">
+                    <div id="court" class="court-view" style="margin: 0; padding: 0;">
                         <div class="zones">
                             <div class="zone">4</div><div class="zone">3</div><div class="zone">2</div>
                             <div class="zone">5</div><div class="zone">6</div><div class="zone">1</div>
                         </div>
                         @php $players = json_decode($movement->players, true); @endphp
                         @foreach ($players as $player)
-                            <div class="player" data-role="{{ $player['role'] ?? '' }}" style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px">
+                            @php
+                                $topPct = max(0, min(100, ((float) ($player['top'] ?? 0)) / 400 * 100));
+                                $leftPct = max(0, min(100, ((float) ($player['left'] ?? 0)) / 500 * 100));
+                            @endphp
+                            <div class="player" data-role="{{ $player['role'] ?? '' }}" style="top: {{ $topPct }}%; left: {{ $leftPct }}%;">
                                 {{ $player['role'] ?? '?' }}
                             </div>
                         @endforeach

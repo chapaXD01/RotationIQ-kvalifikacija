@@ -935,9 +935,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // #court may be visually scaled down to fit a narrow screen (.court-wrap) while
+        // staying laid out at its native 500x400px — divide back into that virtual space
+        // so the destination marker/animation land where the tap actually was
         const rect = court.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        const scale = rect.width / court.offsetWidth;
+        const x = (event.clientX - rect.left) / scale;
+        const y = (event.clientY - rect.top) / scale;
 
         selectedPlayer.destination = { x, y };
 

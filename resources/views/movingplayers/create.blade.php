@@ -47,7 +47,7 @@
                     </div>
                     <div class="p-6 flex justify-center items-center min-h-[440px]">
                         <link rel="stylesheet" href="{{ asset('style.css') }}">
-                        <div id="courtContainer" style="position: relative; display: inline-block;">
+                        <div id="courtContainer" class="court-wrap">
                             <div id="court" style="margin: 0; padding: 0; cursor: crosshair;">
                                 <div class="zones">
                                     <div class="zone">4</div><div class="zone">3</div><div class="zone">2</div>

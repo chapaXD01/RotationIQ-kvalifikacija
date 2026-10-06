@@ -51,6 +51,14 @@
     cursor: grabbing;
 }
 
+/* movingplayers pages define their own "#courtContainer .player" transition
+   (left/top 0.6s ease, for the Animate Movement playback) which is MORE specific than
+   .player.dragging above and was winning during an active drag, making it feel laggy
+   exactly like the original rotation-court bug. This beats that specificity. */
+#courtContainer .player.dragging {
+    transition: none;
+}
+
 /* read-only court view (attack/defence/movingplayers "show" pages) — the authoring
    canvas is a fixed 500x400px desktop layout, which either forces horizontal scrolling
    or gets clipped on a phone so players render partly/fully off-screen. Here #court

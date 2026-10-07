@@ -75,9 +75,9 @@
 
 <div class="px-2 pb-3 shrink-0">
     <div class="flex items-center gap-2.5 rounded-xl p-2.5 overflow-hidden" style="background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.08);">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background: rgba(37,99,235,0.6);">
+        <a href="{{ route('profile.edit') }}" title="Profile" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 hover:brightness-110 transition" style="background: rgba(37,99,235,0.6);">
             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-        </div>
+        </a>
         <div class="min-w-0 flex-1" @if ($collapsible) x-show="!sidebarCollapsed" x-cloak @endif>
             <p class="text-xs font-semibold text-white truncate">{{ Auth::user()->name }}</p>
             <a href="{{ route('profile.edit') }}" class="text-[11px] font-semibold uppercase tracking-wide text-blue-300 hover:text-blue-200 transition">{{ ucfirst(Auth::user()->role) }}</a>

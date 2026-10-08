@@ -1,59 +1,122 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# RotationIQ
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+RotationIQ is a volleyball rotation planning tool for coaches and players. It lets a coach
+build a team roster, assign positions and roles, and lay out attack and defence rotations on
+an interactive court — either as a single formation or as a full 6-rotation sequence — which
+teammates can then view from their own account.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Teams** — a coach creates a team and gets a join code to share; players join with that
+  code. Team roles (manager, assistant manager, student) control who can edit the roster,
+  rename positions, or post announcements.
+- **Attack & Defence rotations** — drag players onto a court to build a formation. A rotation
+  can be a **single** snapshot or a **sequence** of all 6 rotations, built and edited slot by
+  slot. Rotations saved to a team are visible to every team member; only the creator can edit
+  or delete them.
+- **Moving Players** — a separate tool for sketching a player's movement from one court
+  position to another, with a simple click-to-select / click-to-set-destination animation.
+- **Team chat & announcements** — a running chat for the team, plus a separate announcements
+  feed that only the coach/managers can post to.
+- **Responsive, touch-friendly court** — the interactive court works with a mouse on desktop
+  and with touch on a phone, and scales to fit the screen either way.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 12, PHP 8.2+, MySQL
+- **Auth**: Laravel Breeze (registration, login, password reset)
+- **Frontend**: Blade, Tailwind CSS, Alpine.js, Vite
+- **Testing**: Pest
 
-## Learning Laravel
+## Roles
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+RotationIQ has two layers of roles:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Account role** (`users.role`): `coach` or `student`, chosen at registration. A coach can
+  create teams; a student can only join one with a code.
+- **Team role** (`team_user.role`, per team membership): `manager`, `assistant_manager`, or
+  `student`. The team's creator (the coach) is always treated as its manager. A manager can
+  change roster roles/positions/attendance and post announcements; an assistant manager can
+  edit student roster data but not promote anyone; a student can only view.
 
-## Laravel Sponsors
+## Core data model
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Table | Purpose |
+|---|---|
+| `users` | Accounts — name, email, password, account `role` |
+| `teams` | A team — name, `coach_id`, `join_code` |
+| `team_user` | Pivot: team membership — per-member `role`, `position` (`S`/`MB`/`OH`/`RS`/`L`), `attendance` |
+| `team_messages` | Team chat history |
+| `team_announcements` | Coach/manager announcements, separate from chat |
+| `attack_rotations` / `defence_rotations` | A saved rotation — `name`, `type` (`single`/`sequence`), `players` (JSON), optional `team_id` |
+| `moving_players` | A saved player-movement sketch — `name`, `players` (JSON) |
 
-### Premium Partners
+Player layouts (`players` on rotations and moving-player records) are stored as JSON rather
+than normalized rows, since each entry is really a court diagram (role, position, pixel
+coordinates) rather than relational data — but this means the database can't enforce things
+like "no duplicate position" or "these player ids belong to this team" by itself; that's
+validated in `BaseRotationController` at save time instead.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Local setup
 
-## Contributing
+Requirements: PHP 8.2+, Composer, Node.js, MySQL.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+git clone <this-repo>
+cd RotationIQ
 
-## Code of Conduct
+composer install
+npm install
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+cp .env.example .env
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+Edit `.env` and point `DB_*` at a MySQL database you've created:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=rotationiq
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-## License
+Then:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan migrate
+npm run build   # or `npm run dev` while actively developing
+php artisan serve
+```
+
+Visit `http://localhost:8000`, register an account, and either create a team (as a coach) or
+join one with a code (as a student).
+
+## Running tests
+
+```bash
+php artisan test
+```
+
+## Deploying to production
+
+A few things that matter beyond "it runs on `php artisan serve` locally":
+
+- **`APP_DEBUG=false`** and **`APP_ENV=production`** — `APP_DEBUG=true` (the local default)
+  leaks stack traces and config to visitors on any error; never deploy with it on.
+- **`SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION` = `database`** — already the default
+  here. Most hosts (Railway, Render, etc.) use an ephemeral filesystem that's wiped on every
+  deploy/restart, so file-based sessions or cache would silently reset; the database-backed
+  drivers survive that.
+- **Trusted proxies** — `bootstrap/app.php` already calls `$middleware->trustProxies(at:
+  '*')`, which is required behind any reverse-proxy host (Railway, Render, Heroku-style
+  platforms all terminate HTTPS at their own edge and forward plain HTTP internally). Without
+  it, Laravel thinks every request is insecure and generates `http://` URLs even on an HTTPS
+  site.
+- **`APP_URL`** must match the real public URL once one exists, not `http://localhost`.
+- **Build step** — the deploy needs to run both `composer install --no-dev --optimize-autoloader`
+  and `npm install && npm run build` (the UI is compiled through Vite, not served raw).
+- **Migrations** — run `php artisan migrate --force` once after the first deploy (and after
+  any later schema change); it isn't run automatically on every deploy.

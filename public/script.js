@@ -195,7 +195,7 @@ attachDragHandlers(court);
     const positionLabels = {
         S: 'Setter',
         MB: 'Middle blocker',
-        OT: 'Outside hitter',
+        OH: 'Outside hitter',
         RS: 'Right side',
         L: 'Libero'
     };
@@ -346,7 +346,7 @@ attachDragHandlers(court);
         courtPositions[pos] = { top: parseFloat(top), left: parseFloat(left) };
     };
 
-    // builds the standard base rotation (pos4 RS, pos3 MB, pos2 OT / pos5 OT, pos6 L or MB, pos1 S)
+    // builds the standard base rotation (pos4 RS, pos3 MB, pos2 OH / pos5 OH, pos6 L or MB, pos1 S)
     // instead of just dropping roster players into slots in roster order — a libero can never
     // legally stand front row, so it is only ever placed at pos6 (back row)
     function autoFillFromRoster(players) {
@@ -359,7 +359,7 @@ attachDragHandlers(court);
             courtPositions[pos] = { ...zoneCenters[pos] };
         });
 
-        const byRole = { S: [], OT: [], MB: [], RS: [], L: [] };
+        const byRole = { S: [], OH: [], MB: [], RS: [], L: [] };
         players.forEach(player => {
             if (player.position && byRole[player.position]) {
                 byRole[player.position].push(player);
@@ -368,7 +368,7 @@ attachDragHandlers(court);
 
         const setter = byRole.S[0] || null;
         const opposite = byRole.RS[0] || null;
-        const outsides = byRole.OT.slice(0, 2);
+        const outsides = byRole.OH.slice(0, 2);
         const middles = byRole.MB.slice(0, 2);
         const libero = byRole.L[0] || null;
 

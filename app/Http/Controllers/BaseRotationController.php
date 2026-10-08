@@ -180,7 +180,7 @@ abstract class BaseRotationController extends Controller
         }
 
         $rules[$prefix . 'user_id'] = 'nullable|integer';
-        $rules[$prefix . 'role']    = 'required|string|in:S,MB,OT,RS,L';
+        $rules[$prefix . 'role']    = 'required|string|in:S,MB,OH,RS,L';
         $rules[$prefix . 'pos']     = 'required|in:1,2,3,4,5,6';
         $rules[$prefix . 'top']     = 'required|numeric|between:0,400';
         $rules[$prefix . 'left']    = 'required|numeric|between:0,500';

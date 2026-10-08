@@ -373,7 +373,7 @@
                                 <option value="">No position</option>
                                 <option value="S">S - Setter</option>
                                 <option value="MB">MB - Middle blocker</option>
-                                <option value="OT">OT - Outside hitter</option>
+                                <option value="OH">OH - Outside hitter</option>
                                 <option value="RS">RS - Right side</option>
                                 <option value="L">L - Libero</option>
                             </select>

@@ -34,7 +34,7 @@ class TeamController extends Controller
         $this->authorizeRosterUpdate($request, $team, $userId);
 
         $validated = $request->validate([
-            'position' => ['nullable', 'in:MB,OT,S,RS,L'],
+            'position' => ['nullable', 'in:MB,OH,S,RS,L'],
         ]);
 
         $team->members()->updateExistingPivot($userId, $validated);

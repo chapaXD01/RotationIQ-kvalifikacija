@@ -48,10 +48,7 @@ class MovingPlayerController extends Controller
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'players' => 'required|array|min:1'
-        ]);
+        $validated = $request->validate($this->playerValidationRules());
 
         $movement = MovingPlayer::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
 
@@ -65,10 +62,7 @@ class MovingPlayerController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'players' => 'required|array|min:1'
-        ]);
+        $validated = $request->validate($this->playerValidationRules());
 
         MovingPlayer::create([
             'name' => $validated['name'],
@@ -77,6 +71,21 @@ class MovingPlayerController extends Controller
         ]);
 
         return response()->json(['success' => true]);
+    }
+
+    // same shape/type validation added to BaseRotationController — role/pos/top/left
+    // were never checked here, so a malformed request could save junk court data the
+    // same way the old corrupted rotation row happened
+    protected function playerValidationRules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'players' => 'required|array|min:1',
+            'players.*.role' => 'required|string|in:S,MB,OH,RS,L',
+            'players.*.pos' => 'required|in:1,2,3,4,5,6',
+            'players.*.top' => 'required|numeric|between:0,400',
+            'players.*.left' => 'required|numeric|between:0,500',
+        ];
     }
 
     public function destroy($id)

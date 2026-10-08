@@ -107,9 +107,56 @@ class TeamController extends Controller
         $isMember = $team->members()->whereKey($request->user()->id)->exists();
         abort_unless($isMember || $request->user()->id === $team->coach_id, 403);
 
-        $team->load(['coach', 'members', 'messages.user', 'announcements.user']);
+        $team->load(['coach', 'members', 'announcements.user']);
 
-        return view('teams.show', compact('team'));
+        // only load the most recent page of chat history up front — a long-running team
+        // chat could otherwise mean loading thousands of messages on every page view.
+        // Oldest-first for display; "hasMoreMessages" tells the view whether a
+        // "load earlier" button is worth showing.
+        // NB: the messages() relation already orders oldest()->oldest('id') — reorder()
+        // clears that first, otherwise the relation's own order wins over ours and this
+        // silently returns the OLDEST 50 messages instead of the newest 50.
+        $messages = $team->messages()->with('user')
+            ->reorder()->orderByDesc('created_at')->orderByDesc('id')
+            ->limit(50)->get()->reverse()->values();
+        $hasMoreMessages = $messages->isNotEmpty()
+            && $team->messages()->where('id', '<', $messages->first()->id)->exists();
+
+        return view('teams.show', compact('team', 'messages', 'hasMoreMessages'));
+    }
+
+    // older chat history, fetched on demand via the "load earlier messages" button
+    // instead of loading the whole conversation up front (see show() above)
+    public function loadMoreMessages(Request $request, Team $team): \Illuminate\Http\JsonResponse
+    {
+        $isMember = $team->members()->whereKey($request->user()->id)->exists();
+        abort_unless($isMember || $request->user()->id === $team->coach_id, 403);
+
+        $validated = $request->validate([
+            'before_id' => ['required', 'integer'],
+        ]);
+
+        $messages = $team->messages()
+            ->with('user:id,name')
+            ->where('id', '<', $validated['before_id'])
+            ->reorder()->orderByDesc('created_at')->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $hasMore = $messages->isNotEmpty()
+            && $team->messages()->where('id', '<', $messages->first()->id)->exists();
+
+        return response()->json([
+            'messages' => $messages->map(fn ($message) => [
+                'id' => $message->id,
+                'user_name' => $message->user->name,
+                'message' => $message->message,
+                'created_at_human' => $message->created_at->diffForHumans(),
+            ]),
+            'has_more' => $hasMore,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -210,6 +257,10 @@ class TeamController extends Controller
         return back()->with('success', 'Announcement posted.');
     }
 
+    // deliberately NOT restricted to the announcement's own author: any manager/coach can
+    // remove any announcement, same as they can already edit any player's roster role,
+    // position or attendance. A coach needs to be able to take down a manager's post while
+    // that manager is away, not be blocked because they didn't write it themselves.
     public function destroyAnnouncement(Request $request, Team $team, TeamAnnouncement $announcement): RedirectResponse
     {
         abort_unless($announcement->team_id === $team->id, 404);

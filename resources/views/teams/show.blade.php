@@ -304,24 +304,41 @@
 
                 {{-- Right column: team chat --}}
                 <div class="lg:col-span-2">
-                    <section class="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md flex flex-col h-full">
+                    <section
+                        class="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md flex flex-col h-full"
+                        x-data="{ loadingMore: false, hasMore: {{ $hasMoreMessages ? 'true' : 'false' }} }"
+                    >
                         <div class="mb-3 flex items-center justify-between">
                             <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Team chat</span>
-                            <span class="text-[10px] text-slate-400">{{ $team->messages->count() }} messages</span>
+                            <span class="text-[10px] text-slate-400">{{ $messages->count() }} loaded</span>
                         </div>
 
-                        <div class="space-y-2 flex-1 min-h-[24rem] max-h-[36rem] overflow-y-auto pr-1">
-                            @forelse ($team->messages as $message)
-                                <div class="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
-                                    <div class="mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-slate-400">
-                                        <span>{{ $message->user->name }}</span>
-                                        <span>{{ $message->created_at->diffForHumans() }}</span>
+                        <div id="chat-scroll" class="space-y-2 flex-1 min-h-[24rem] max-h-[36rem] overflow-y-auto pr-1">
+                            <div x-show="hasMore" class="text-center mb-2">
+                                <button
+                                    type="button"
+                                    @click="loadingMore = true; loadEarlierMessages().finally(() => loadingMore = false)"
+                                    class="text-xs font-semibold text-blue-300 hover:text-blue-200 transition disabled:opacity-50"
+                                    :disabled="loadingMore"
+                                >
+                                    <span x-show="!loadingMore">Load earlier messages</span>
+                                    <span x-show="loadingMore" x-cloak>Loading…</span>
+                                </button>
+                            </div>
+
+                            <div id="chat-messages">
+                                @forelse ($messages as $message)
+                                    <div class="rounded-xl border border-white/10 bg-black/10 px-3 py-2 mb-2" data-message-id="{{ $message->id }}">
+                                        <div class="mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-slate-400">
+                                            <span>{{ $message->user->name }}</span>
+                                            <span>{{ $message->created_at->diffForHumans() }}</span>
+                                        </div>
+                                        <p class="text-sm text-slate-200">{{ $message->message }}</p>
                                     </div>
-                                    <p class="text-sm text-slate-200">{{ $message->message }}</p>
-                                </div>
-                            @empty
-                                <p class="text-sm text-slate-400">No messages yet. Start the conversation.</p>
-                            @endforelse
+                                @empty
+                                    <p class="text-sm text-slate-400">No messages yet. Start the conversation.</p>
+                                @endforelse
+                            </div>
                         </div>
 
                         <form method="POST" action="{{ route('teams.messages.store', $team) }}" class="mt-4 flex gap-2">
@@ -395,4 +412,69 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // fetches the next page of older chat history and prepends it above the
+        // current oldest message, keeping the scroll position steady under the button
+        function loadEarlierMessages() {
+            const list = document.getElementById('chat-messages');
+            const scrollBox = document.getElementById('chat-scroll');
+            const oldest = list.querySelector('[data-message-id]');
+
+            if (!oldest) {
+                return Promise.resolve();
+            }
+
+            const beforeId = oldest.dataset.messageId;
+            const url = new URL(@json(route('teams.messages.index', $team)));
+            url.searchParams.set('before_id', beforeId);
+
+            return fetch(url, {
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    const prevHeight = scrollBox.scrollHeight;
+
+                    data.messages.forEach(message => {
+                        const div = document.createElement('div');
+                        div.className = 'rounded-xl border border-white/10 bg-black/10 px-3 py-2 mb-2';
+                        div.dataset.messageId = message.id;
+
+                        const header = document.createElement('div');
+                        header.className = 'mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-slate-400';
+
+                        const nameEl = document.createElement('span');
+                        nameEl.textContent = message.user_name;
+                        const timeEl = document.createElement('span');
+                        timeEl.textContent = message.created_at_human;
+                        header.appendChild(nameEl);
+                        header.appendChild(timeEl);
+
+                        const body = document.createElement('p');
+                        body.className = 'text-sm text-slate-200';
+                        body.textContent = message.message;
+
+                        div.appendChild(header);
+                        div.appendChild(body);
+                        list.appendChild(div);
+                    });
+
+                    // messages are appended in chronological order but belong before the
+                    // previously-oldest message, so move the whole new batch above it
+                    const newNodes = Array.from(list.children).slice(-data.messages.length);
+                    newNodes.forEach(node => list.insertBefore(node, oldest));
+
+                    scrollBox.scrollTop += scrollBox.scrollHeight - prevHeight;
+
+                    return data.has_more;
+                })
+                .then(hasMore => {
+                    const section = list.closest('[x-data]');
+                    if (section && window.Alpine) {
+                        window.Alpine.$data(section).hasMore = hasMore;
+                    }
+                });
+        }
+    </script>
 </x-app-layout>

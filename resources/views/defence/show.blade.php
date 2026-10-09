@@ -103,11 +103,14 @@
                                             <div class="mini-zone-cell"></div>
                                         </div>
                                         @foreach ((array) $slotPlayers as $player)
-                                            @php $pos = (int) ($player['pos'] ?? 0); @endphp
+                                            @php
+                                                $pos = (int) ($player['pos'] ?? 0);
+                                                $isStale = $rotation->team_id && !empty($player['user_id']) && !in_array((int) $player['user_id'], $currentRosterIds, true);
+                                            @endphp
                                             <div
-                                                class="mini-player-abs {{ $pos === 1 ? 'is-serving' : '' }}"
+                                                class="mini-player-abs {{ $pos === 1 ? 'is-serving' : '' }} {{ $isStale ? 'is-stale' : '' }}"
                                                 data-role="{{ $player['role'] ?? '' }}"
-                                                data-name="{{ $player['name'] ?? '' }}"
+                                                data-name="{{ ($player['name'] ?? '') . ($isStale ? ' — no longer on team' : '') }}"
                                                 style="top: {{ $player['top'] ?? 0 }}px; left: {{ $player['left'] ?? 0 }}px;"
                                             >
                                                 {{ $player['role'] ?? '?' }}
@@ -171,10 +174,11 @@
                             @php
                                 $topPct = max(0, min(100, ((float) ($player['top'] ?? 0)) / 400 * 100));
                                 $leftPct = max(0, min(100, ((float) ($player['left'] ?? 0)) / 500 * 100));
+                                $isStale = $rotation->team_id && !empty($player['user_id']) && !in_array((int) $player['user_id'], $currentRosterIds, true);
                             @endphp
-                            <div class="player {{ (int) ($player['pos'] ?? 0) === 1 ? 'is-serving' : '' }}"
+                            <div class="player {{ (int) ($player['pos'] ?? 0) === 1 ? 'is-serving' : '' }} {{ $isStale ? 'is-stale' : '' }}"
                                  data-role="{{ $player['role'] ?? '' }}"
-                                 data-name="{{ $player['name'] ?? '' }}"
+                                 data-name="{{ ($player['name'] ?? '') . ($isStale ? ' — no longer on team' : '') }}"
                                  style="top: {{ $topPct }}%; left: {{ $leftPct }}%;">
                                 {{ $player['role'] ?? '?' }}
                             </div>

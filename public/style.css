@@ -1,5 +1,16 @@
 /* laukuma css */
 
+/* a saved rotation's players are embedded JSON, not a live relation to the team roster —
+   if a player later leaves the team, their user_id just silently lingers in old saved
+   lineups with no way for the DB to know. This flags them visually on the show page
+   instead of rendering them identically to a player still actually on the team. */
+.player.is-stale,
+.mini-player-abs.is-stale {
+    opacity: 0.6;
+    outline: 2px dashed #f87171;
+    outline-offset: 2px;
+}
+
 #court {
     width: 500px;
     height: 400px;

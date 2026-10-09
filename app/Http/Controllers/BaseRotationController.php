@@ -53,7 +53,16 @@ abstract class BaseRotationController extends Controller
                 ->with('error', 'Rotation not found.');
         }
 
-        return view($this->getRouteName() . '.show', compact('rotation'));
+        // player data is embedded JSON, not a real relation — the DB can't keep a saved
+        // player's user_id in sync if they later leave the team, so a departed player can
+        // silently linger in old lineups looking identical to a current one. Compare
+        // against the team's CURRENT roster here so the view can flag anyone who's no
+        // longer actually on the team.
+        $currentRosterIds = $rotation->team_id
+            ? Team::with('members')->find($rotation->team_id)?->members->pluck('id')->all() ?? []
+            : [];
+
+        return view($this->getRouteName() . '.show', compact('rotation', 'currentRosterIds'));
     }
     //parada edit formu tikai ja rotacija pieder useram
     public function edit($id)

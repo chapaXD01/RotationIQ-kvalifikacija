@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RotationRequest;
 use App\Models\Team;
-use Illuminate\Http\Request;
 
 abstract class BaseRotationController extends Controller
 {
@@ -70,28 +70,20 @@ abstract class BaseRotationController extends Controller
 
         return view($this->getRouteName() . '.edit', compact('rotation', 'teams'));
     }
-    // update gatavas rotacijas
-    public function update(Request $request, $id)
+    // update gatavas rotacijas — shape/team validation and authorization now live in
+    // RotationRequest (see app/Http/Requests/RotationRequest.php); this method is just
+    // orchestration: take the already-validated input and persist it.
+    public function update(RotationRequest $request, $id)
     {
-        $type = $request->input('type') === 'sequence' ? 'sequence' : 'single';
-        $rules = $this->playerValidationRules($type);
-
-        // NB: $request->validate() only returns fields that have a validation rule. Because
-        // "players.*.user_id" (or "players.*.*.user_id" for sequences) only declares a rule
-        // for the user_id sub-key, Laravel's validated() rebuilds every player entry with
-        // ONLY that key and silently drops role/pos/top/left/name. validate() is still run
-        // for its side effect (throwing 422 on bad shapes/types) but the actual players
-        // payload must come from the raw request input.
-        $request->validate($rules);
-
-        $name = $request->input('name');
-        $teamId = $request->input('team_id') ?: null;
-        $players = $request->input('players');
-
-        if (!empty($teamId)) {
-            abort_unless($this->userManagesTeam((int) $teamId), 403);
-            abort_unless($this->playersBelongToTeam((int) $teamId, $this->flattenPlayers($players, $type)), 422, 'One or more players do not belong to the selected team.');
-        }
+        // every player key (user_id/role/pos/top/left/name) now has its own rule in
+        // RotationRequest, so validated() reconstructs the full shape instead of silently
+        // dropping fields — and, unlike raw input(), it also strips anything NOT declared
+        // there, so a client can't smuggle arbitrary extra keys into the stored JSON.
+        $type = $request->rotationType();
+        $validated = $request->validated();
+        $name = $validated['name'];
+        $teamId = $validated['team_id'] ?? null;
+        $players = $validated['players'];
 
         $model = $this->getModel();
         $rotation = $model::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
@@ -103,30 +95,25 @@ abstract class BaseRotationController extends Controller
             'type'    => $type,
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'id'      => $rotation->id,
+            'name'    => $rotation->name,
+            'type'    => $rotation->type,
+            'team_id' => $rotation->team_id,
+        ]);
     }
     //valide un saglaba rotacijas kuras pieder useram
-    public function store(Request $request)
+    public function store(RotationRequest $request)
     {
-        $type = $request->input('type') === 'sequence' ? 'sequence' : 'single';
-        $rules = $this->playerValidationRules($type);
-
-        // see the NB in update() above — validate() only enforces the rules here, the
-        // actual players payload is read from the raw request so role/pos/top/left/name
-        // survive (validate()'s return value would silently strip them to just user_id)
-        $request->validate($rules);
-
-        $name = $request->input('name');
-        $teamId = $request->input('team_id') ?: null;
-        $players = $request->input('players');
-
-        if (!empty($teamId)) {
-            abort_unless($this->userManagesTeam((int) $teamId), 403);
-            abort_unless($this->playersBelongToTeam((int) $teamId, $this->flattenPlayers($players, $type)), 422, 'One or more players do not belong to the selected team.');
-        }
+        $type = $request->rotationType();
+        $validated = $request->validated();
+        $name = $validated['name'];
+        $teamId = $validated['team_id'] ?? null;
+        $players = $validated['players'];
 
         $model = $this->getModel();
-        $model::create([
+        $rotation = $model::create([
             'name'    => $name,
             'players' => json_encode($players),
             'user_id' => auth()->id(),
@@ -134,7 +121,13 @@ abstract class BaseRotationController extends Controller
             'type'    => $type,
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'id'      => $rotation->id,
+            'name'    => $rotation->name,
+            'type'    => $rotation->type,
+            'team_id' => $rotation->team_id,
+        ]);
     }
 
     // teams kuras esošais useris parvalda (coach, manager vai assistant_manager)
@@ -144,7 +137,7 @@ abstract class BaseRotationController extends Controller
         return auth()->user()->teams()
             ->with('members')
             ->get()
-            ->filter(fn (Team $team) => $this->userManagesTeam($team, $team->members))
+            ->filter(fn (Team $team) => $team->isManagedBy(auth()->user(), $team->members))
             ->map(fn (Team $team) => [
                 'id' => $team->id,
                 'name' => $team->name,
@@ -156,99 +149,6 @@ abstract class BaseRotationController extends Controller
             ])
             ->values()
             ->all();
-    }
-
-    // validacijas rules priekš store()/update() — "single" tipam players ir flat masīvs,
-    // "sequence" tipam tas ir 6 apakšmasīvi (viens katrai rotacijai). role/pos/top/left agrāk
-    // netika parbaudīti vispār (tikai user_id) — klients varēja saglabāt nepilnīgus/nejaušus
-    // spēlētāju objektus, kas izraisīja "Undefined array key" kļūdas skatu lapās
-    protected function playerValidationRules(string $type): array
-    {
-        $rules = [
-            'name'    => 'required|string|max:255',
-            'type'    => 'nullable|in:single,sequence',
-            'team_id' => 'nullable|integer|exists:teams,id',
-        ];
-
-        $prefix = $type === 'sequence' ? 'players.*.*.' : 'players.*.';
-
-        if ($type === 'sequence') {
-            $rules['players']   = 'required|array|size:6';
-            $rules['players.*'] = 'array|min:1';
-        } else {
-            $rules['players'] = 'required|array|min:1';
-        }
-
-        $rules[$prefix . 'user_id'] = 'nullable|integer';
-        $rules[$prefix . 'role']    = 'required|string|in:S,MB,OH,RS,L';
-        $rules[$prefix . 'pos']     = 'required|in:1,2,3,4,5,6';
-        $rules[$prefix . 'top']     = 'required|numeric|between:0,400';
-        $rules[$prefix . 'left']    = 'required|numeric|between:0,500';
-        $rules[$prefix . 'name']    = 'nullable|string|max:255';
-
-        return $rules;
-    }
-
-    // "sequence" tipam players ir 6 apakšmasīvi (viens katrai rotacijai) — savieno tos vienā
-    // sarakstā, lai varētu izmantot to pašu team-piederības parbaudi kā "single" tipam
-    protected function flattenPlayers(array $players, string $type): array
-    {
-        if ($type !== 'sequence') {
-            return $players;
-        }
-
-        $flat = [];
-
-        foreach ($players as $slot) {
-            foreach ((array) $slot as $player) {
-                $flat[] = $player;
-            }
-        }
-
-        return $flat;
-    }
-
-    // parbauda vai visi players[].user_id, kas tika iesutiti, tiešām pieder pie norādītā teama
-    protected function playersBelongToTeam(int $teamId, array $players): bool
-    {
-        $team = Team::with('members')->find($teamId);
-
-        if (!$team) {
-            return false;
-        }
-
-        $rosterIds = $team->members->pluck('id')->all();
-
-        foreach ($players as $player) {
-            $userId = $player['user_id'] ?? null;
-
-            if ($userId !== null && !in_array((int) $userId, $rosterIds, true)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // parbauda vai useris ir sī teama coach, manager vai assistant_manager
-    protected function userManagesTeam($team, $members = null): bool
-    {
-        if (is_int($team)) {
-            $team = Team::with('members')->find($team);
-        }
-
-        if (!$team) {
-            return false;
-        }
-
-        if ($team->coach_id === auth()->id()) {
-            return true;
-        }
-
-        $members ??= $team->members;
-        $role = $members->firstWhere('id', auth()->id())?->pivot->role;
-
-        return in_array($role, ['manager', 'assistant_manager'], true);
     }
     //Delete == gone forever!!!
     public function destroy($id)

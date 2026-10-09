@@ -57,4 +57,20 @@ class Team extends Model
             ->where('users.id', '!=', $this->coach_id)
             ->get();
     }
+
+    // whether $user is this team's coach, manager, or assistant manager — i.e. allowed to
+    // manage its roster/rotations. Pass $members (already-loaded) to avoid a query when the
+    // caller already has them; moved here from BaseRotationController so it's reusable from
+    // anywhere that needs the same check (rotation authorization, team settings, etc.)
+    public function isManagedBy(User $user, $members = null): bool
+    {
+        if ($this->coach_id === $user->id) {
+            return true;
+        }
+
+        $members ??= $this->members;
+        $role = $members->firstWhere('id', $user->id)?->pivot->role;
+
+        return in_array($role, ['manager', 'assistant_manager'], true);
+    }
 }

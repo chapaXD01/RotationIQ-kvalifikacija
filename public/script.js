@@ -714,9 +714,7 @@ function saveRotation() {
 
     const token = document.querySelector('meta[name="csrf-token"]').content;
 
-    const url = type === "attack"
-        ? "/attack-rotations"
-        : "/defence-rotations";
+    const url = type === "attack" ? "/attack" : "/defence";
 
     fetch(url, {
 
@@ -724,6 +722,7 @@ function saveRotation() {
 
         headers: {
             "Content-Type": "application/json",
+            "Accept": "application/json",
             "X-CSRF-TOKEN": token
         },
 
@@ -747,11 +746,9 @@ function saveRotation() {
 
         alert("Rotation saved successfully");
 
-        if (type === "attack") {
-            window.location.href = "/attack";
-        } else {
-            window.location.href = "/defence";
-        }
+        // jump straight to the rotation that was just created instead of the generic
+        // list, now that the server actually tells us its id
+        window.location.href = (type === "attack" ? "/attack/" : "/defence/") + data.id;
 
     })
     .catch(error => {
@@ -858,6 +855,7 @@ function updateRotation(id) {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
@@ -868,14 +866,9 @@ function updateRotation(id) {
         })
     })
     .then(res => res.json())
-    .then(() => {
+    .then(data => {
         alert('Rotation updated');
-
-        if (type === "attack") {
-            window.location.href = '/attack';
-        } else {
-            window.location.href = '/defence';
-        }
+        window.location.href = (type === "attack" ? '/attack/' : '/defence/') + data.id;
     });
 }
 

@@ -61,23 +61,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/teams/{team}/announcements/{announcement}', [TeamController::class, 'destroyAnnouncement'])->name('teams.announcements.destroy');
     Route::delete('/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
+
+    // Defence Rotations Routes
+    Route::resource('defence', DefenceController::class);
+
+    // Attack Rotations Routes
+    Route::resource('attack', AttackController::class);
+
+    // Moving Players Routes
+    Route::resource('movingplayers', MovingPlayerController::class);
+
+    // Animator view for a specific movement
+    Route::get('/movingplayers/{id}/animate', [MovingPlayerController::class, 'animate'])->name('movingplayers.animate');
 });
-
-// Defence Rotations Routes
-Route::resource('defence', DefenceController::class);
-
-// Attack Rotations Routes
-Route::resource('attack', AttackController::class);
-
-// Moving Players Routes
-Route::resource('movingplayers', MovingPlayerController::class);
-
-// Animator view for a specific movement
-Route::get('/movingplayers/{id}/animate', [MovingPlayerController::class, 'animate'])->name('movingplayers.animate');
-
-Route::post('/defence-rotations', [DefenceController::class, 'store']);
-Route::patch('/defence-rotations/{id}', [DefenceController::class, 'update']);
-Route::post('/attack-rotations', [AttackController::class, 'store']);
-Route::patch('/attack-rotations/{id}', [AttackController::class, 'update']);
 
 require __DIR__.'/auth.php';

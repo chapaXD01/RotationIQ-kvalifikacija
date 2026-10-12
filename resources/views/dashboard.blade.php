@@ -8,7 +8,7 @@
     <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            <div class="overflow-hidden shadow-sm sm:rounded-lg" style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+            <div class="hero-card overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-white">
                     <h1>Start building ur volleyball rotations today!</h1>
                 </div>
@@ -204,7 +204,7 @@
                 @endif
             </section>
 
-            <div class="overflow-hidden shadow-sm sm:rounded-lg" style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+            <div class="hero-card overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-white">
                     <h1 class="text-lg font-bold text-white">How to use RotationIQ</h1>
                     <p class="mt-1 mb-5 text-sm text-white/70">A quick tour of what you can do.</p>

@@ -6,3 +6,219 @@ select option {
 	background-color: #0f172a;
 	color: #ffffff;
 }
+
+/* ===================================================================
+   Dark / light theme
+   ===================================================================
+   The whole app was built dark-only: hundreds of `text-white`,
+   `bg-white/5`, `border-white/10` etc. Tailwind classes scattered across
+   every view, plus a handful of raw inline rgba() styles in the shared
+   layout shell. Rewriting every view to use theme-aware classes wasn't
+   realistic, so instead:
+     1. Semantic CSS variables hold the actual colors, redefined under
+        [data-theme="light"] (set on <html> by the toggle button).
+     2. The shared shell (app.blade.php/guest.blade.php) was converted
+        to reference these variables directly, since that code is small
+        and centralized.
+     3. A global override block below reapplies the variables to the
+        small set of Tailwind utility classes that make up the vast
+        majority of real usage across the app (text-white, bg-white/5,
+        border-white/10, the common slate text shades, etc.) — this
+        covers existing markup without having to touch every view file.
+   Saturated accent colors (blue/green/purple/amber badges and buttons)
+   are intentionally left alone — they stay legible on both backgrounds,
+   and re-tuning every accent shade individually was out of scope here.
+   The court itself (#court, .player, .zone) is also unchanged — it's a
+   literal wood-court diagram, not UI chrome, so it has no "light mode".
+   =================================================================== */
+
+:root {
+	--bg-page: #0a1628;
+	--bg-page-image:
+		radial-gradient(ellipse 80% 50% at 20% 10%, rgba(37, 99, 235, 0.18) 0%, transparent 60%),
+		radial-gradient(ellipse 75% 55% at 85% 15%, rgba(217, 160, 91, 0.26) 0%, transparent 60%),
+		radial-gradient(ellipse 40% 30% at 60% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+		url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+
+	--bg-card: rgba(255, 255, 255, 0.05);
+	--bg-card-strong: rgba(255, 255, 255, 0.10);
+	--bg-sunken: rgba(0, 0, 0, 0.10);
+	--bg-sidebar: rgba(0, 0, 0, 0.22);
+	--bg-topbar: rgba(10, 22, 40, 0.75);
+	--bg-header: rgba(255, 255, 255, 0.04);
+	--bg-footer: rgba(0, 0, 0, 0.35);
+	--bg-hero: rgba(59, 130, 246, 0.15);
+	--bg-select: #0f172a;
+
+	--border-subtle: rgba(255, 255, 255, 0.10);
+	--border-faint: rgba(255, 255, 255, 0.05);
+	--border-strong: rgba(255, 255, 255, 0.2);
+
+	--text-primary: #ffffff;
+	--text-secondary: #cbd5e1;
+	--text-muted: #94a3b8;
+	--text-faint: #64748b;
+
+	--shadow-card: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+	--bg-page: #eef2f7;
+	--bg-page-image:
+		radial-gradient(ellipse 80% 50% at 20% 10%, rgba(37, 99, 235, 0.10) 0%, transparent 60%),
+		radial-gradient(ellipse 75% 55% at 85% 15%, rgba(217, 160, 91, 0.16) 0%, transparent 60%),
+		radial-gradient(ellipse 40% 30% at 60% 30%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+
+	--bg-card: rgba(15, 23, 42, 0.035);
+	--bg-card-strong: rgba(15, 23, 42, 0.07);
+	--bg-sunken: rgba(15, 23, 42, 0.045);
+	--bg-sidebar: rgba(255, 255, 255, 0.7);
+	--bg-topbar: rgba(255, 255, 255, 0.8);
+	--bg-header: rgba(15, 23, 42, 0.03);
+	--bg-footer: rgba(15, 23, 42, 0.05);
+	--bg-hero: rgba(59, 130, 246, 0.08);
+	--bg-select: #ffffff;
+
+	--border-subtle: rgba(15, 23, 42, 0.12);
+	--border-faint: rgba(15, 23, 42, 0.07);
+	--border-strong: rgba(15, 23, 42, 0.2);
+
+	--text-primary: #0f172a;
+	--text-secondary: #334155;
+	--text-muted: #64748b;
+	--text-faint: #94a3b8;
+
+	--shadow-card: rgba(15, 23, 42, 0.12);
+}
+
+/* !important is justified here (and only here): a bunch of <option> tags across the
+   create/edit rotation pages, plus the JS-populated team <option>s, carry their own
+   inline style="background:#1e293b" — an inline style beats any normal external rule,
+   so without !important this override would never actually apply to those options. */
+[data-theme="light"] select option {
+	background-color: var(--bg-select) !important;
+	color: var(--text-primary) !important;
+}
+
+/* reusable hero banner — replaces 7 copies of the same inline style string
+   previously duplicated across dashboard.blade.php and home.blade.php */
+.hero-card {
+	background-color: var(--bg-hero);
+	backdrop-filter: blur(10px);
+	border: 1px solid var(--border-strong);
+}
+
+/* -------------------------------------------------------------------
+   Global utility-class overrides (light mode only) — see the big
+   comment above for why this exists instead of per-view dark: classes.
+
+   Substring attribute selectors ([class*="…"]) are used deliberately
+   instead of exact class matches where Tailwind's opacity-modifier
+   syntax is involved (text-white/40, text-blue-300/80, etc.) — there
+   are 20+ distinct opacity levels of these in real use across the app
+   (secondary captions, faint helper text, section-label accents), and
+   they all need the SAME light-mode treatment regardless of their
+   exact opacity, so matching the color family as a substring covers
+   every variant without enumerating each one. The one place this is
+   deliberately NOT done is bg-black/* — bg-black/60 is a modal
+   backdrop scrim and must stay dark in both themes, so only the two
+   specific low-opacity "sunken surface" shades are matched by name.
+   ------------------------------------------------------------------- */
+[data-theme="light"] .text-white {
+	color: var(--text-primary);
+}
+
+/* text-white/NN (any opacity) is always used as faint/secondary caption
+   text, never a full heading — so it maps to muted, not primary */
+[data-theme="light"] [class*="text-white/"] {
+	color: var(--text-muted);
+}
+
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 {
+	color: var(--text-secondary);
+}
+
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-slate-500 {
+	color: var(--text-muted);
+}
+
+[data-theme="light"] [class*="bg-white/"] {
+	background-color: var(--bg-card);
+}
+
+[data-theme="light"] [class*="border-white/"] {
+	border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
+	border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .bg-black\/10,
+[data-theme="light"] .bg-black\/20 {
+	background-color: var(--bg-sunken);
+}
+
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-800,
+[data-theme="light"] .bg-slate-700,
+[data-theme="light"] [class*="bg-slate-700/"],
+[data-theme="light"] [class*="bg-slate-800/"],
+[data-theme="light"] [class*="bg-slate-900/"] {
+	background-color: #e2e8f0;
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .placeholder-white::placeholder,
+[data-theme="light"] [class*="placeholder-white/"]::placeholder,
+[data-theme="light"] .placeholder-slate-400::placeholder {
+	color: var(--text-faint);
+}
+
+[data-theme="light"] .hover\:bg-white\/10:hover {
+	background-color: var(--bg-card-strong);
+}
+
+[data-theme="light"] .hover\:text-white:hover {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .hover\:border-white\/20:hover {
+	border-color: var(--border-strong);
+}
+
+/* readable accent text on a light background — the dark-mode shades
+   (blue-200/300, etc.) are deliberately light and wash out on white.
+   Substring match so the /60../80 opacity variants are covered too. */
+[data-theme="light"] [class*="text-blue-200"],
+[data-theme="light"] [class*="text-blue-300"],
+[data-theme="light"] [class*="text-blue-400"] {
+	color: #1d4ed8;
+}
+
+[data-theme="light"] [class*="text-green-200"],
+[data-theme="light"] [class*="text-green-300"],
+[data-theme="light"] [class*="text-green-400"],
+[data-theme="light"] [class*="text-emerald-200"] {
+	color: #15803d;
+}
+
+[data-theme="light"] [class*="text-purple-200"],
+[data-theme="light"] [class*="text-purple-300"],
+[data-theme="light"] [class*="text-purple-400"] {
+	color: #7e22ce;
+}
+
+[data-theme="light"] [class*="text-red-300"],
+[data-theme="light"] [class*="text-red-400"] {
+	color: #dc2626;
+}
+
+[data-theme="light"] [class*="text-yellow-200"],
+[data-theme="light"] [class*="text-yellow-300"],
+[data-theme="light"] [class*="text-yellow-400"],
+[data-theme="light"] [class*="text-amber-300"] {
+	color: #b45309;
+}

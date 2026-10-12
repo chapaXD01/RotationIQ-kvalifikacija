@@ -5,6 +5,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        <!-- set the theme before anything paints, so a light-mode preference doesn't
+             flash dark for a frame while the rest of the page (and Alpine) loads -->
+        <script>
+            document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+        </script>
+
         <title>RotationIQ</title>
 
         <!-- Fonts -->
@@ -16,12 +22,8 @@
 
         <style>
             .app-bg {
-                background-color: #0a1628;
-                background-image:
-                    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(37, 99, 235, 0.18) 0%, transparent 60%),
-                    radial-gradient(ellipse 75% 55% at 85% 15%, rgba(217, 160, 91, 0.26) 0%, transparent 60%),
-                    radial-gradient(ellipse 40% 30% at 60% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-                    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                background-color: var(--bg-page);
+                background-image: var(--bg-page-image);
                 /* the radial blooms are positioned as % of the whole background area — without
                    "fixed" they anchor to the full document height, so a taller page (like the
                    dashboard once it has more sections) drags them down into view somewhere
@@ -37,7 +39,16 @@
     <body
         class="app-bg font-sans antialiased"
         style="margin: 0; padding: 0;"
-        x-data="{ sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', mobileSidebarOpen: false }"
+        x-data="{
+            sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
+            mobileSidebarOpen: false,
+            theme: localStorage.getItem('theme') || 'dark',
+            toggleTheme() {
+                this.theme = this.theme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', this.theme);
+                document.documentElement.setAttribute('data-theme', this.theme);
+            }
+        }"
     >
         <div style="display: flex; min-height: 100vh;">
 
@@ -46,7 +57,7 @@
                 <aside
                     :class="sidebarCollapsed ? 'sm:w-20' : 'sm:w-64'"
                     class="hidden sm:flex sm:flex-col shrink-0 transition-all duration-200"
-                    style="background: rgba(0,0,0,0.22); border-right: 1px solid rgba(255,255,255,0.08);"
+                    style="background: var(--bg-sidebar); border-right: 1px solid var(--border-subtle);"
                 >
                     <x-sidebar-content />
                 </aside>
@@ -61,7 +72,7 @@
                     ></div>
                     <aside
                         class="relative flex flex-col w-64 h-full"
-                        style="background: #0a1628; border-right: 1px solid rgba(255,255,255,0.08);"
+                        style="background: var(--bg-page); border-right: 1px solid var(--border-subtle);"
                         x-show="mobileSidebarOpen"
                         x-transition:enter="transition ease-out duration-200"
                         x-transition:enter-start="opacity-0 -translate-x-4"
@@ -78,7 +89,7 @@
                 <!-- Top bar: shown always for guests, hamburger-only strip for auth users on mobile -->
                 <div
                     class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 {{ auth()->check() ? 'sm:hidden' : '' }}"
-                    style="background: rgba(10, 22, 40, 0.75); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 50;"
+                    style="background: var(--bg-topbar); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle); z-index: 50;"
                 >
                     <div class="flex items-center gap-3">
                         @auth
@@ -95,22 +106,23 @@
                             <span class="font-bold text-sm text-white tracking-tight">RotationIQ</span>
                         </a>
                     </div>
-                    @guest
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <x-theme-toggle />
+                        @guest
                             <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium text-white hover:text-white transition" style="border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);">
                                 {{ __('Log In') }}
                             </a>
                             <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-white transition" style="background: #2563eb; border: 1px solid rgba(96,165,250,0.4); box-shadow: 0 2px 12px rgba(37,99,235,0.35);">
                                 {{ __('Register') }}
                             </a>
-                        </div>
-                    @endguest
+                        @endguest
+                    </div>
                 </div>
 
                 <div style="flex: 1; overflow-y: auto;">
                     <!-- Page Heading -->
                     @isset($header)
-                        <header class="relative" style="background-color: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 10;">
+                        <header class="relative" style="background-color: var(--bg-header); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-subtle); z-index: 10;">
                             <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
                                 {{ $header }}
                             </div>
@@ -124,7 +136,7 @@
                 </div>
 
                 <!-- Footer -->
-                <footer class="mt-auto w-full" style="background-color: rgba(0,0,0,0.35); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.08);">
+                <footer class="mt-auto w-full" style="background-color: var(--bg-footer); backdrop-filter: blur(12px); border-top: 1px solid var(--border-subtle);">
                     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
@@ -167,7 +179,7 @@
                         </div>
 
                         <!-- Copyright -->
-                        <div class="mt-6 pt-5 text-center text-xs text-white" style="border-top:1px solid rgba(255,255,255,0.07);">
+                        <div class="mt-6 pt-5 text-center text-xs text-white" style="border-top:1px solid var(--border-faint);">
                             &copy; 2026 RotationIQ. All rights reserved.
                         </div>
                     </div>

@@ -176,6 +176,10 @@
     color: #fff;
 }
 
+/* this file is a separate stylesheet from the Vite-compiled resources/css/app.css,
+   but it's loaded on the same pages, so it can reference the same theme custom
+   properties (--text-secondary, --bg-card, etc. — defined on :root / [data-theme="light"]
+   in app.css) instead of hardcoding dark-only colors that go invisible in light mode. */
 .bench-item {
     display: flex;
     align-items: center;
@@ -183,16 +187,16 @@
     gap: 10px;
     padding: 8px 12px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: #e2e8f0;
+    background: var(--bg-card, rgba(255,255,255,0.05));
+    border: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+    color: var(--text-secondary, #e2e8f0);
     font-size: 13px;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .bench-item:hover {
-    background: rgba(255,255,255,0.1);
+    background: var(--bg-card-strong, rgba(255,255,255,0.1));
     border-color: rgba(168,85,247,0.4);
 }
 
@@ -216,18 +220,18 @@
 }
 
 .bench-item-disabled:hover {
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.08);
+    background: var(--bg-card, rgba(255,255,255,0.05));
+    border-color: var(--border-subtle, rgba(255,255,255,0.08));
 }
 
 .bench-item .bench-position.bench-position-none {
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.5);
+    background: var(--bg-card-strong, rgba(255,255,255,0.08));
+    color: var(--text-muted, rgba(255,255,255,0.5));
 }
 
 .bench-empty {
     font-size: 12px;
-    color: rgba(255,255,255,0.4);
+    color: var(--text-muted, rgba(255,255,255,0.4));
     padding: 8px 4px;
 }
 

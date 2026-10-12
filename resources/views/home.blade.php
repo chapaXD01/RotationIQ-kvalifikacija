@@ -6,7 +6,7 @@
     </x-slot>
     <div class="py-12 ">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
-                <div style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); overflow-hidden; border-radius: 0.5rem;">
+                <div class="hero-card" style="overflow: hidden; border-radius: 0.5rem;">
                     <div class="p-6">
                         <h1 class="text-3xl font-bold mb-4 text-white">What is RotationIQ About?</h1>
                     <p class="text-white mb-4">
@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
-                <div style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); overflow-hidden; border-radius: 0.5rem;">
+                <div class="hero-card" style="overflow: hidden; border-radius: 0.5rem;">
                     <div class="p-6">
                         <h2 class="text-2xl font-bold mb-4 text-white">The Problem</h2>
                         <p class="text-white">
@@ -26,7 +26,7 @@
                 </div>
             </div>
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
-                <div style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); overflow-hidden; border-radius: 0.5rem;">
+                <div class="hero-card" style="overflow: hidden; border-radius: 0.5rem;">
                     <div class="p-6">
                         <h2 class="text-2xl font-bold mb-4 text-white">Our Solution</h2>
                         <p class="text-white mb-4">
@@ -39,7 +39,7 @@
                 </div>
             </div>
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
-                <div style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); overflow-hidden; border-radius: 0.5rem;">
+                <div class="hero-card" style="overflow: hidden; border-radius: 0.5rem;">
                     <div class="p-6">
                         <h2 class="text-2xl font-bold mb-6 text-white">Features</h2>
                         <div class="grid md:grid-cols-2 gap-8">
@@ -68,7 +68,7 @@
                 </div>
             </div>
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-8">
-                <div style="background-color: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); overflow-hidden; border-radius: 0.5rem;">
+                <div class="hero-card" style="overflow: hidden; border-radius: 0.5rem;">
                     <div class="p-6">
                         <h2 class="text-2xl font-bold mb-4 text-white">Our Goal</h2>
                         <p class="text-white mb-4">

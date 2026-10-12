@@ -61,6 +61,25 @@
     @endforeach
 </nav>
 
+<button
+    type="button"
+    @click="toggleTheme()"
+    class="flex items-center gap-2 mx-2 mb-1 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition"
+    @if ($collapsible) :class="sidebarCollapsed ? 'justify-center px-0' : ''" @endif
+>
+    <svg x-show="theme === 'dark'" x-cloak class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+    </svg>
+    <svg x-show="theme === 'light'" x-cloak class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1020.354 15.354z"/>
+    </svg>
+    @if ($collapsible)
+        <span x-show="!sidebarCollapsed" x-cloak class="text-sm font-medium whitespace-nowrap overflow-hidden" x-text="theme === 'dark' ? 'Light mode' : 'Dark mode'"></span>
+    @else
+        <span class="text-sm font-medium whitespace-nowrap overflow-hidden" x-text="theme === 'dark' ? 'Light mode' : 'Dark mode'"></span>
+    @endif
+</button>
+
 @if ($collapsible)
     <button
         type="button"
@@ -74,7 +93,7 @@
 @endif
 
 <div class="px-2 pb-3 shrink-0">
-    <div class="flex items-center gap-2.5 rounded-xl p-2.5 overflow-hidden" style="background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.08);">
+    <div class="flex items-center gap-2.5 rounded-xl p-2.5 overflow-hidden" style="background: var(--bg-card); border: 1px solid var(--border-subtle);">
         <a href="{{ route('profile.edit') }}" title="Profile" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 hover:brightness-110 transition" style="background: rgba(37,99,235,0.6);">
             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
         </a>
